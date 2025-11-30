@@ -1,0 +1,158 @@
+import { useState, useCallback, useMemo } from 'react';
+import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
+import { Sidebar, Header } from './components/Layout';
+import { Summary, RouteTruck, OtherShipMethods, Exceptions, ISOs, Analytics } from './pages';
+import { OrderProvider, useOrderContext } from './contexts';
+import type { PageKey, RefreshInterval } from './types';
+import './App.css';
+
+const { Content } = Layout;
+
+// Light theme configuration for clean dashboard aesthetic
+const dcDashboardTheme = {
+  token: {
+    colorPrimary: '#1890ff',
+    colorSuccess: '#52c41a',
+    colorWarning: '#faad14',
+    colorError: '#ff4d4f',
+    colorInfo: '#1890ff',
+    borderRadius: 4,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  algorithm: theme.defaultAlgorithm,
+};
+
+const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
+  summary: { title: 'Summary', subtitle: 'Overview' },
+  routeTruck: { title: 'Route Truck', subtitle: 'Local Delivery' },
+  otherShipMethods: { title: 'Other Ship Methods', subtitle: 'UPS, FedEx, LTL' },
+  exceptions: { title: 'Exceptions', subtitle: 'Action Required' },
+  isos: { title: 'ISOs', subtitle: 'Internal Service Orders' },
+  onhand: { title: 'On Hand', subtitle: 'Inventory' },
+  cycleCount: { title: 'Cycle Count', subtitle: 'Inventory' },
+  traction: { title: 'Traction', subtitle: 'Analytics' },
+  analytics: { title: 'Analytics', subtitle: 'Reports & Insights' },
+};
+
+/**
+ * Inner App component that uses OrderContext
+ */
+function AppContent() {
+  const [currentPage, setCurrentPage] = useState<PageKey>('summary');
+  const [refreshEnabled, setRefreshEnabled] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(60000);
+
+  // Get order data from context
+  const {
+    isLoading,
+    isRefreshing,
+    lastSynced,
+    error,
+    isUsingMockData,
+    refresh,
+  } = useOrderContext();
+
+  const handleManualRefresh = useCallback(() => {
+    refresh();
+  }, [refresh]);
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'summary':
+        return <Summary />;
+      case 'routeTruck':
+        return <RouteTruck />;
+      case 'otherShipMethods':
+        return <OtherShipMethods />;
+      case 'exceptions':
+        return <Exceptions />;
+      case 'isos':
+        return <ISOs />;
+      case 'analytics':
+        return <Analytics />;
+      default:
+        return <Summary />;
+    }
+  };
+
+  const pageInfo = pageTitles[currentPage];
+
+  // Show loading spinner on initial load
+  if (isLoading) {
+    return (
+      <Layout className="app-layout">
+        <div className="loading-container">
+          <Spin size="large" tip="Loading orders..." />
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout className="app-layout">
+      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Layout className="main-layout">
+        <Header
+          title={pageInfo.title}
+          subtitle={pageInfo.subtitle}
+          refreshEnabled={refreshEnabled}
+          refreshInterval={refreshInterval}
+          lastSynced={lastSynced}
+          isRefreshing={isRefreshing}
+          onRefreshToggle={setRefreshEnabled}
+          onIntervalChange={setRefreshInterval}
+          onManualRefresh={handleManualRefresh}
+        />
+        <Content className="main-content">
+          {/* Show mock data warning if API is unavailable */}
+          {isUsingMockData && (
+            <Alert
+              message="Using Demo Data"
+              description="API server is unavailable. Displaying sample data for demonstration."
+              type="info"
+              showIcon
+              closable
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {/* Show error if any */}
+          {error && (
+            <Alert
+              message="Error Loading Data"
+              description={error.message}
+              type="error"
+              showIcon
+              closable
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {renderPage()}
+        </Content>
+      </Layout>
+    </Layout>
+  );
+}
+
+/**
+ * Main App component with OrderProvider wrapper
+ */
+function App() {
+  // Memoize options to prevent unnecessary re-renders
+  const orderOptions = useMemo(() => ({
+    autoRefresh: false,
+    refreshInterval: 60000 as RefreshInterval,
+    useMockDataFallback: true,
+  }), []);
+
+  return (
+    <ConfigProvider theme={dcDashboardTheme}>
+      <OrderProvider options={orderOptions}>
+        <AppContent />
+      </OrderProvider>
+    </ConfigProvider>
+  );
+}
+
+export default App;

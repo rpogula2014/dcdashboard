@@ -1,0 +1,99 @@
+/* KPI Card - Light Theme, Compact */
+
+.kpi-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.kpi-card .ant-card-body {
+  padding: 12px;
+}
+
+.kpi-card-clickable {
+  cursor: pointer;
+}
+
+.kpi-card-clickable:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.kpi-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kpi-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Value */
+.kpi-value-container {
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1;
+}
+
+/* Progress Bar */
+.kpi-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kpi-progress .ant-progress {
+  flex: 1;
+}
+
+.kpi-progress .ant-progress-inner {
+  background: #f5f5f5 !important;
+}
+
+.kpi-progress .ant-progress-bg {
+  height: 4px !important;
+}
+
+.kpi-progress-label {
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* Footer */
+.kpi-footer {
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.kpi-footer-text {
+  font-size: 11px;
+  color: #999;
+}
+
+/* Color indicator bar at top */
+.kpi-card-blue { border-top: 2px solid #1890ff; }
+.kpi-card-green { border-top: 2px solid #52c41a; }
+.kpi-card-orange { border-top: 2px solid #faad14; }
+.kpi-card-red { border-top: 2px solid #ff4d4f; }

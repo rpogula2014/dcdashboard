@@ -1,0 +1,132 @@
+/* DC Dashboard Header - Light Theme, Compact */
+
+.dc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+/* Left Section - Title */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: #999;
+}
+
+/* Right Section - Controls */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Sync Status */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-icon {
+  color: #52c41a;
+  font-size: 12px;
+}
+
+.sync-text {
+  font-size: 11px;
+  color: #999 !important;
+}
+
+/* Refresh Controls */
+.refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #1890ff;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+
+.refresh-button:hover:not(:disabled) {
+  border-color: #1890ff;
+}
+
+.refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Toggle Group */
+.refresh-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refresh-switch.ant-switch {
+  min-width: 32px;
+}
+
+.refresh-label {
+  font-size: 11px;
+  color: #666 !important;
+}
+
+/* Interval Select */
+.interval-select {
+  min-width: 60px;
+}
+
+.interval-select .ant-select-selector {
+  height: 24px !important;
+  padding: 0 6px !important;
+}
+
+.interval-select .ant-select-selection-item {
+  font-size: 11px;
+  line-height: 22px !important;
+}
+
+@media (max-width: 768px) {
+  .sync-status {
+    display: none;
+  }
+  .header-subtitle {
+    display: none;
+  }
+}

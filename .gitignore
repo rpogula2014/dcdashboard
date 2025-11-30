@@ -1,0 +1,11 @@
+node_modules
+.venv
+.vscode
+.ipynb_checkpoints
+logs
+__pycache__
+baml_client
+baml_src
+.env
+*.pem
+*.crt

@@ -1,0 +1,12 @@
+/* StatusIcon Component - Light Theme */
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-success { color: #52c41a; }
+.status-fail { color: #ff4d4f; }
+.status-pending { color: #faad14; }
+.status-na { color: #d9d9d9; }

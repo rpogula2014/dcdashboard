@@ -1,0 +1,185 @@
+/* DC Dashboard Sidebar - Light Theme, Compact */
+
+.dc-sidebar {
+  background: #001529 !important;
+  border-right: none;
+}
+
+/* Header Section */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.logo-full {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.logo-collapsed {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.sidebar-toggle:hover {
+  color: #fff;
+}
+
+/* Menu Styling */
+.sidebar-menu {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 0;
+}
+
+.sidebar-menu .ant-menu-item {
+  margin: 2px 8px !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  border-radius: 4px !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-size: 13px;
+}
+
+.sidebar-menu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+
+.sidebar-menu .ant-menu-item-selected {
+  background: #1890ff !important;
+  color: #fff !important;
+}
+
+.sidebar-menu .ant-menu-item .anticon {
+  font-size: 14px !important;
+  margin-right: 8px;
+}
+
+.sidebar-menu-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sidebar-menu-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge Styling */
+.sidebar-badge .ant-badge-count {
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  padding: 0 4px;
+}
+
+/* Footer Section */
+.sidebar-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dc-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #52c41a;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(82, 196, 26, 0.1);
+  border-radius: 3px;
+  text-align: center;
+}
+
+/* Collapsed State */
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-header {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-toggle {
+  display: none;
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-menu .ant-menu-item {
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-menu .ant-menu-item .anticon {
+  margin-right: 0;
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-menu-text {
+  display: none;
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+.dc-sidebar .ant-layout-sider-trigger {
+  display: none;
+}
+
+.dc-sidebar .ant-menu-inline .ant-menu-item::after {
+  display: none;
+}
+
+/* Menu Group Styling */
+.sidebar-menu .ant-menu-item-group-title {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 20px 4px !important;
+}
+
+/* Menu Divider Styling */
+.sidebar-menu .ant-menu-item-divider {
+  margin: 8px 16px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}

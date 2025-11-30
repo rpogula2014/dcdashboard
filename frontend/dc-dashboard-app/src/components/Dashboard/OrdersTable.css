@@ -1,0 +1,210 @@
+/* Orders Table - Light Theme, Compact Rows */
+
+.orders-table-container {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.orders-table-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Table Header */
+.orders-table .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+  color: #666 !important;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 8px 10px !important;
+}
+
+/* Table Body - Compact Rows */
+.orders-table .ant-table-tbody > tr > td {
+  padding: 6px 10px !important;
+  font-size: 12px;
+  border-bottom: 1px solid #f5f5f5 !important;
+}
+
+.orders-table .ant-table-tbody > tr:hover > td {
+  background: #fafafa !important;
+}
+
+/* Row Highlighting - Critical */
+.orders-table .ant-table-tbody > tr.row-critical > td {
+  background: #fff1f0 !important;
+}
+
+.orders-table .ant-table-tbody > tr.row-critical:hover > td {
+  background: #ffccc7 !important;
+}
+
+/* Row Highlighting - Warning */
+.orders-table .ant-table-tbody > tr.row-warning > td {
+  background: #fffbe6 !important;
+}
+
+.orders-table .ant-table-tbody > tr.row-warning:hover > td {
+  background: #fff1b8 !important;
+}
+
+/* Cell Styles */
+.order-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.line-number {
+  font-weight: 400;
+  color: #999;
+  font-size: 11px;
+}
+
+.exception-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.exception-dot.critical {
+  background: #ff4d4f;
+}
+
+.exception-dot.warning {
+  background: #faad14;
+}
+
+.customer-name {
+  font-size: 12px;
+  color: #333;
+}
+
+.item-code {
+  font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.ship-method {
+  font-size: 11px;
+  color: #666;
+}
+
+.status-tag {
+  font-size: 10px;
+  padding: 0 6px;
+  line-height: 18px;
+}
+
+.due-date {
+  font-size: 11px;
+  color: #666;
+}
+
+.due-date.overdue {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+/* Exception Badge */
+.exception-badge .ant-badge-status-text {
+  font-size: 11px;
+  color: #333;
+}
+
+/* Pagination - Compact */
+.orders-table .ant-pagination {
+  margin: 8px 12px !important;
+  font-size: 12px;
+}
+
+.orders-table .ant-pagination-item {
+  min-width: 26px;
+  height: 26px;
+  line-height: 24px;
+  font-size: 12px;
+}
+
+.orders-table .ant-pagination-total-text {
+  font-size: 11px;
+  color: #999;
+}
+
+.orders-table .ant-select-selector {
+  height: 26px !important;
+}
+
+.orders-table .ant-select-selection-item {
+  font-size: 11px;
+  line-height: 24px !important;
+}
+
+/* Sorter and Filter Icons */
+.orders-table .ant-table-column-sorter {
+  font-size: 10px;
+}
+
+.orders-table .ant-table-filter-trigger {
+  font-size: 10px;
+}
+
+/* Quantity Column */
+.qty-display {
+  font-size: 11px;
+  font-family: monospace;
+  color: #333;
+  padding: 2px 6px;
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.qty-display.qty-short {
+  color: #ff4d4f;
+  background: #fff1f0;
+  font-weight: 600;
+}
+
+/* Hold Column */
+.hold-none {
+  color: #d9d9d9;
+  font-size: 12px;
+}
+
+.hold-applied {
+  color: #ff4d4f;
+  font-size: 14px;
+}
+
+.hold-released {
+  color: #52c41a;
+  font-size: 14px;
+}
+
+/* Ship Set Column */
+.ship-set {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Routing N/A */
+.routing-na {
+  color: #d9d9d9;
+  font-size: 12px;
+}
