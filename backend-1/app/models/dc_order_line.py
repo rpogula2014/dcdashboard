@@ -45,7 +45,6 @@ class DCOpenOrderLine(BaseModel):
     original_line_status: Optional[str] = Field(
         None, description="Original line status (Ready to Release, Backordered, etc.)"
     )
-    requested_quantity: Optional[float] = Field(None, description="WSH requested quantity")
 
     # Status flags
     hold_applied: Optional[str] = Field(None, description="Y/N flag if hold was applied")

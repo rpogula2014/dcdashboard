@@ -40,7 +40,7 @@ export function OrdersTable({
   showShipMethod = true,
   showRouting = true,
   pagination = {
-    defaultPageSize: 10,
+    defaultPageSize: 50,
     showSizeChanger: true,
     showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} orders`,
     pageSizeOptions: ['10', '15', '20', '50'],
@@ -215,7 +215,7 @@ export function OrdersTable({
       title: 'Ship Set',
       dataIndex: 'shipSet',
       key: 'shipSet',
-      width: 80,
+      width: 75,
       render: (shipSet: string) => (
         <span className="ship-set">{shipSet}</span>
       ),

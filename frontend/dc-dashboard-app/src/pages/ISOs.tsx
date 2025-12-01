@@ -32,7 +32,7 @@ export function ISOs() {
         showShipMethod={true}
         showRouting={false}
         pagination={{
-          defaultPageSize: 15,
+          defaultPageSize: 50,
           showSizeChanger: true,
           pageSizeOptions: ['10', '15', '20', '50'],
           showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,

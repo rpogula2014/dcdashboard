@@ -43,6 +43,7 @@ export interface UseOrdersOptions {
   autoRefresh?: boolean;
   refreshInterval?: RefreshInterval;
   useMockDataFallback?: boolean;
+  dc?: number;
 }
 
 // =============================
@@ -156,6 +157,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
     autoRefresh = false,
     refreshInterval = 60000,
     useMockDataFallback = true,
+    dc,
   } = options;
 
   // State
@@ -197,8 +199,8 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
       setIsApiAvailable(apiHealthy);
 
       if (apiHealthy) {
-        // Fetch from API
-        const data = await fetchOpenDCOrderLines();
+        // Fetch from API with selected DC
+        const data = await fetchOpenDCOrderLines({ dc });
         if (isMountedRef.current) {
           setOrders(data);
           setIsUsingMockData(false);
@@ -240,7 +242,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
         setIsRefreshing(false);
       }
     }
-  }, [useMockDataFallback]);
+  }, [useMockDataFallback, dc]);
 
   /**
    * Manual refresh action

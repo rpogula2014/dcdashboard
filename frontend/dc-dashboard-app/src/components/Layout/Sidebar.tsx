@@ -1,18 +1,18 @@
 import { useState, useMemo } from 'react';
-import { Layout, Menu, Badge } from 'antd';
+import { Layout, Menu, Badge, Select, Spin } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
   TruckOutlined,
   InboxOutlined,
-  ExclamationCircleOutlined,
   ShopOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BarChartOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
-import { useOrderContext } from '../../contexts';
+import { useOrderContext, useDCContext } from '../../contexts';
 import { getSidebarCounts } from '../../hooks/useOrders';
 import './Sidebar.css';
 
@@ -63,6 +63,9 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   const { orderRows } = useOrderContext();
   const badgeCounts = useMemo(() => getSidebarCounts(orderRows), [orderRows]);
 
+  // Get DC location data from context
+  const { locations, selectedDC, isLoading: dcLoading, setSelectedDC } = useDCContext();
+
   // Build grouped menu items
   const menuItems: MenuItem[] = useMemo(() => [
     // Summary Section
@@ -81,19 +84,6 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         createMenuItem('isos', 'ISOs', <ShopOutlined />, badgeCounts.isos, undefined, collapsed),
       ],
     },
-
-    // Divider
-    { type: 'divider' },
-
-    // Exceptions Section
-    createMenuItem(
-      'exceptions',
-      'Exceptions',
-      <ExclamationCircleOutlined />,
-      badgeCounts.exceptions,
-      badgeCounts.exceptions > 0 ? '#ff4d4f' : undefined,
-      collapsed
-    ),
 
     // Divider
     { type: 'divider' },
@@ -129,6 +119,35 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         </button>
       </div>
 
+      <div className="sidebar-dc-selector">
+        {dcLoading ? (
+          <Spin size="small" />
+        ) : collapsed ? (
+          <EnvironmentOutlined style={{ fontSize: 16, color: '#1890ff' }} />
+        ) : (
+          <Select
+            value={selectedDC}
+            onChange={setSelectedDC}
+            style={{ width: '100%' }}
+            size="small"
+            loading={dcLoading}
+            showSearch
+            optionFilterProp="label"
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            options={locations.map(loc => ({
+              value: loc.organization_id,
+              label: loc.location_code,
+            }))}
+            placeholder="Select DC"
+            suffixIcon={<EnvironmentOutlined />}
+            className="dc-location-select"
+            popupClassName="dc-location-dropdown"
+          />
+        )}
+      </div>
+
       <Menu
         mode="inline"
         selectedKeys={[currentPage]}
@@ -137,11 +156,6 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         className="sidebar-menu"
       />
 
-      <div className="sidebar-footer">
-        {!collapsed && (
-          <span className="dc-label">DC-PHX</span>
-        )}
-      </div>
     </Sider>
   );
 }

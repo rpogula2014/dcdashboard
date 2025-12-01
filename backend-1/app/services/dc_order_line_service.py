@@ -152,8 +152,7 @@ WITH iteminfo
                        ELSE NULL
                    END
                ELSE ORIGINAL_LINE_STATUS
-           END AS ORIGINAL_LINE_STATUS,
-           wdd1.requested_quantity
+           END AS ORIGINAL_LINE_STATUS
            ,null trip_id
     FROM oe_order_lines_v a,
          mtl_reservations mr,
@@ -165,6 +164,7 @@ WITH iteminfo
       AND a.open_flag = 'Y'
       AND wdd.source_line_id(+) = a.line_id
       AND wdd1.source_line_id = a.line_id
+      AND wdd1.delivery_Detail_id = wdd.delivery_Detail_id(+)
       AND wdd1.source_code = 'OE'
       AND A.SHIP_sET_ID = SET_ID(+)
                               and wcv.freight_code = a.freight_carrier_code
@@ -209,8 +209,8 @@ WITH iteminfo
              ORIGINAL_LINE_STATUS,
              a.attribute8,
              A.header_id,
-             wdd1.requested_quantity,
-             wdd1.released_Status union all
+             wdd1.released_Status 
+             union all
              Select ORDERED_DATE
     , LINE_CATEGORY_CODE
     , ORDERED_ITEM
@@ -254,7 +254,6 @@ WITH iteminfo
         ORIGINAL_LINE_STATUS
       End
        As ORIGINAL_LINE_STATUS
-    , null
     ,trip_id
     From oe_order_lines_v      a
     , apps.wsh_Delivery_Details_oe_V wdd
@@ -266,6 +265,7 @@ WITH iteminfo
    Where   a.ship_from_org_id = :dc
       And wdd.source_line_id = a.line_id
       And wdd1.source_line_id = a.line_id
+      AND wdd1.delivery_Detail_id = wdd.delivery_Detail_id
       And wdd1.source_code = 'OE'
       And A.SHIP_sET_ID = SET_ID(+)
       And wnd.delivery_id = wdd.delivery_id
@@ -397,7 +397,7 @@ FROM opendcopenlines c, xxatdmrp_item_elements_v xie
 Where c.inventory_item_id = xie.inventory_item_id
  
 """
-        logger.debug(sql)
+        #logger.debug(sql)
         return sql
 
     def _map_row_to_model(self, row_dict: dict) -> DCOpenOrderLine:
@@ -439,7 +439,6 @@ Where c.inventory_item_id = xie.inventory_item_id
             ship_to_addressee=row_dict.get("shiptoaddressee"),
             delivery_id=row_dict.get("delivery_id"),
             original_line_status=row_dict.get("original_line_status"),
-            requested_quantity=row_dict.get("requested_quantity"),
             hold_applied=row_dict.get("holdapplied"),
             hold_released=row_dict.get("holdreleased"),
             routed=row_dict.get("routed"),

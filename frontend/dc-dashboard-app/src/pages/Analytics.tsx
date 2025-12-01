@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Card, Row, Col, Select, Empty, Collapse, Statistic } from 'antd';
+import { Select, Empty, Collapse } from 'antd';
 import {
   BarChartOutlined,
   LineChartOutlined,
@@ -197,77 +197,76 @@ export function Analytics() {
   return (
     <div className="page-content">
       {/* Shipped Summary Section */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <span style={{ fontSize: 16, fontWeight: 500 }}>
-              Shipped Summary (Today)
-            </span>
-            <span style={{ marginLeft: 12, color: '#666' }}>
-              {shippedRows.length} lines shipped
-            </span>
-          </Col>
-          <Col>
-            <Row gutter={32}>
-              <Col>
-                <Statistic title="Total Trips" value={shippedStats.totalTrips} prefix={<CarOutlined />} />
-              </Col>
-              <Col>
-                <Statistic title="Total Units" value={shippedStats.totalUnits} prefix={<ShoppingOutlined />} />
-              </Col>
-              <Col>
-                <Statistic title="Lines" value={shippedStats.totalLines} prefix={<BarChartOutlined />} />
-              </Col>
-            </Row>
-          </Col>
-        </Row>
-      </Card>
+      <div className="stats-bar" style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
+            Shipped Today
+          </span>
+          <div style={{ width: '1px', height: '14px', background: '#e8e8e8' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CarOutlined style={{ fontSize: 12, color: '#1890ff' }} />
+            <span style={{ color: '#999', fontSize: 11 }}>Trips:</span>
+            <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>{shippedStats.totalTrips}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShoppingOutlined style={{ fontSize: 12, color: '#52c41a' }} />
+            <span style={{ color: '#999', fontSize: 11 }}>Units:</span>
+            <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>{shippedStats.totalUnits.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <BarChartOutlined style={{ fontSize: 12, color: '#722ed1' }} />
+            <span style={{ color: '#999', fontSize: 11 }}>Lines:</span>
+            <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>{shippedStats.totalLines}</span>
+          </div>
+        </div>
+      </div>
 
       {/* Shipped Charts */}
       <Collapse
         defaultActiveKey={['shipped-trips', 'shipped-product', 'shipped-vendor']}
-        style={{ marginBottom: 16 }}
+        size="small"
+        style={{ marginBottom: 12 }}
         items={[
           {
             key: 'shipped-trips',
             label: (
-              <span>
-                <CarOutlined style={{ marginRight: 8 }} />
-                Shipped Trips by Ship Method ({shippedTripData.length} methods)
+              <span style={{ fontSize: 12 }}>
+                <CarOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                Trips by Ship Method ({shippedTripData.length})
               </span>
             ),
             children: shippedRows.length > 0 ? (
               <ShippedTripsChart data={shippedTripData} />
             ) : (
-              <Empty description="No shipped orders today" />
+              <Empty description="No shipped orders today" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ),
           },
           {
             key: 'shipped-product',
             label: (
-              <span>
-                <ShoppingOutlined style={{ marginRight: 8 }} />
-                Shipped Units by Product Group ({shippedByProductGroup.length} groups)
+              <span style={{ fontSize: 12 }}>
+                <ShoppingOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                Units by Product Group ({shippedByProductGroup.length})
               </span>
             ),
             children: shippedRows.length > 0 ? (
               <ShippedProductChart data={shippedByProductGroup} title="Product Group" />
             ) : (
-              <Empty description="No shipped orders today" />
+              <Empty description="No shipped orders today" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ),
           },
           {
             key: 'shipped-vendor',
             label: (
-              <span>
-                <TeamOutlined style={{ marginRight: 8 }} />
-                Shipped Units by Vendor ({shippedByVendor.length} vendors)
+              <span style={{ fontSize: 12 }}>
+                <TeamOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                Units by Vendor ({shippedByVendor.length})
               </span>
             ),
             children: shippedRows.length > 0 ? (
               <ShippedProductChart data={shippedByVendor} title="Vendor" />
             ) : (
-              <Empty description="No shipped orders today" />
+              <Empty description="No shipped orders today" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ),
           },
         ]}
@@ -276,43 +275,44 @@ export function Analytics() {
       {/* Backorder Summary Section */}
       {backorderRows.length > 0 && (
         <>
-          <Card style={{ marginBottom: 16 }}>
-            <Row justify="space-between" align="middle">
-              <Col>
-                <span style={{ fontSize: 16, fontWeight: 500 }}>
-                  Backorder Summary
-                </span>
-                <span style={{ marginLeft: 12, color: '#666' }}>
-                  {backorderRows.length} lines with backorders
-                </span>
-              </Col>
-              <Col>
-                <span style={{ marginRight: 8, color: '#666' }}>Group by:</span>
-                <Select
-                  value={groupBy}
-                  onChange={setGroupBy}
-                  style={{ width: 160 }}
-                  options={[
-                    { value: 'item', label: 'Item' },
-                    { value: 'productGroup', label: 'Product Group' },
-                    { value: 'vendor', label: 'Vendor' },
-                  ]}
-                />
-              </Col>
-            </Row>
-          </Card>
+          <div className="stats-bar" style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
+                Backorders
+              </span>
+              <div style={{ width: '1px', height: '14px', background: '#e8e8e8' }} />
+              <span style={{ color: '#999', fontSize: 11 }}>
+                {backorderRows.length} lines
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#999', fontSize: 11 }}>Group by:</span>
+              <Select
+                value={groupBy}
+                onChange={setGroupBy}
+                size="small"
+                style={{ width: 130 }}
+                options={[
+                  { value: 'item', label: 'Item' },
+                  { value: 'productGroup', label: 'Product Group' },
+                  { value: 'vendor', label: 'Vendor' },
+                ]}
+              />
+            </div>
+          </div>
 
           {/* Backorder Charts */}
           <Collapse
             defaultActiveKey={['lines', 'units']}
-            style={{ marginBottom: 16 }}
+            size="small"
+            style={{ marginBottom: 12 }}
             items={[
               {
                 key: 'lines',
                 label: (
-                  <span>
-                    <LineChartOutlined style={{ marginRight: 8 }} />
-                    Backorder Lines by Count
+                  <span style={{ fontSize: 12 }}>
+                    <LineChartOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                    Lines by Count
                   </span>
                 ),
                 children: (
@@ -322,9 +322,9 @@ export function Analytics() {
               {
                 key: 'units',
                 label: (
-                  <span>
-                    <UnitsIcon style={{ marginRight: 8 }} />
-                    Backorder Units by Sum
+                  <span style={{ fontSize: 12 }}>
+                    <UnitsIcon style={{ marginRight: 6, fontSize: 11 }} />
+                    Units by Sum
                   </span>
                 ),
                 children: (

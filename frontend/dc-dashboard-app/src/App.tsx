@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
 import { Sidebar, Header } from './components/Layout';
-import { Summary, RouteTruck, OtherShipMethods, Exceptions, ISOs, Analytics } from './pages';
-import { OrderProvider, useOrderContext } from './contexts';
+import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics } from './pages';
+import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext } from './contexts';
 import type { PageKey, RefreshInterval } from './types';
 import './App.css';
 
@@ -26,7 +26,6 @@ const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
   summary: { title: 'Summary', subtitle: 'Overview' },
   routeTruck: { title: 'Route Truck', subtitle: 'Local Delivery' },
   otherShipMethods: { title: 'Other Ship Methods', subtitle: 'UPS, FedEx, LTL' },
-  exceptions: { title: 'Exceptions', subtitle: 'Action Required' },
   isos: { title: 'ISOs', subtitle: 'Internal Service Orders' },
   onhand: { title: 'On Hand', subtitle: 'Inventory' },
   cycleCount: { title: 'Cycle Count', subtitle: 'Inventory' },
@@ -39,8 +38,15 @@ const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
  */
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageKey>('summary');
-  const [refreshEnabled, setRefreshEnabled] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(60000);
+
+  // Get refresh settings from context
+  const {
+    autoRefresh: refreshEnabled,
+    refreshInterval,
+    setAutoRefresh: setRefreshEnabled,
+    setRefreshInterval,
+    triggerManualRefresh,
+  } = useRefreshContext();
 
   // Get order data from context
   const {
@@ -54,7 +60,8 @@ function AppContent() {
 
   const handleManualRefresh = useCallback(() => {
     refresh();
-  }, [refresh]);
+    triggerManualRefresh(); // Also trigger refresh for other components (e.g., ExceptionsCard)
+  }, [refresh, triggerManualRefresh]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -64,8 +71,6 @@ function AppContent() {
         return <RouteTruck />;
       case 'otherShipMethods':
         return <OtherShipMethods />;
-      case 'exceptions':
-        return <Exceptions />;
       case 'isos':
         return <ISOs />;
       case 'analytics':
@@ -136,21 +141,40 @@ function AppContent() {
 }
 
 /**
- * Main App component with OrderProvider wrapper
+ * Wrapper component that provides OrderContext with selected DC and refresh settings
  */
-function App() {
+function OrderProviderWithDC({ children }: { children: React.ReactNode }) {
+  const { selectedDC } = useDCContext();
+  const { autoRefresh, refreshInterval } = useRefreshContext();
+
   // Memoize options to prevent unnecessary re-renders
   const orderOptions = useMemo(() => ({
-    autoRefresh: false,
-    refreshInterval: 60000 as RefreshInterval,
+    autoRefresh,
+    refreshInterval,
     useMockDataFallback: true,
-  }), []);
+    dc: selectedDC,
+  }), [selectedDC, autoRefresh, refreshInterval]);
 
   return (
+    <OrderProvider options={orderOptions}>
+      {children}
+    </OrderProvider>
+  );
+}
+
+/**
+ * Main App component with DCProvider, RefreshProvider, and OrderProvider wrappers
+ */
+function App() {
+  return (
     <ConfigProvider theme={dcDashboardTheme}>
-      <OrderProvider options={orderOptions}>
-        <AppContent />
-      </OrderProvider>
+      <DCProvider>
+        <RefreshProvider>
+          <OrderProviderWithDC>
+            <AppContent />
+          </OrderProviderWithDC>
+        </RefreshProvider>
+      </DCProvider>
     </ConfigProvider>
   );
 }

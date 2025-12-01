@@ -51,6 +51,18 @@
   color: #fff;
 }
 
+/* DC Selector Section (above menu) */
+.sidebar-dc-selector {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dc-sidebar.ant-layout-sider-collapsed .sidebar-dc-selector {
+  display: flex;
+  justify-content: center;
+  padding: 12px 8px;
+}
+
 /* Menu Styling */
 .sidebar-menu {
   background: transparent !important;
@@ -104,16 +116,6 @@
   height: 16px;
   line-height: 16px;
   padding: 0 4px;
-}
-
-/* Footer Section */
-.sidebar-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dc-label {
@@ -182,4 +184,123 @@
 .sidebar-menu .ant-menu-item-divider {
   margin: 8px 16px !important;
   background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* DC Location Select Dropdown */
+.sidebar-dc-selector .ant-select {
+  width: 100%;
+}
+
+.sidebar-dc-selector .ant-select-selector {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 4px !important;
+}
+
+.sidebar-dc-selector .ant-select-selection-search {
+  color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select-selection-search input {
+  color: #fff !important;
+  caret-color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select-selection-search-input {
+  color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select .ant-select-selection-search-input {
+  color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select-single .ant-select-selector .ant-select-selection-search-input {
+  color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select-selection-item {
+  color: #fff !important;
+}
+
+.sidebar-dc-selector .ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.sidebar-dc-selector .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.sidebar-dc-selector .ant-select:hover .ant-select-selector {
+  border-color: #1890ff !important;
+}
+
+.sidebar-dc-selector .ant-select-focused .ant-select-selector {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* Ensure input text is visible when typing */
+.sidebar-dc-selector input.ant-select-selection-search-input {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* DC Location Select - specific class targeting */
+.dc-location-select .ant-select-selector {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.dc-location-select .ant-select-selection-search-input {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.dc-location-select .ant-select-selection-item {
+  color: #fff !important;
+}
+
+.dc-location-select .ant-select-arrow {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Dropdown popup styling */
+.dc-location-dropdown .ant-select-item {
+  color: #333;
+}
+
+.dc-location-dropdown .ant-select-item-option-selected {
+  background-color: #e6f7ff;
+  font-weight: 600;
+}
+
+/* Global override for sidebar select input - highest specificity */
+.dc-sidebar .sidebar-dc-selector .dc-location-select input[type="search"],
+.dc-sidebar .sidebar-dc-selector .dc-location-select input {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Alternative: Light background approach for better visibility */
+.dc-location-select.ant-select .ant-select-selector {
+  background: #fff !important;
+  border: 1px solid #d9d9d9 !important;
+}
+
+.dc-location-select.ant-select .ant-select-selection-search-input {
+  color: #333 !important;
+  -webkit-text-fill-color: #333 !important;
+}
+
+.dc-location-select.ant-select .ant-select-selection-item {
+  color: #333 !important;
+}
+
+.dc-location-select.ant-select .ant-select-selection-placeholder {
+  color: #bfbfbf !important;
+}
+
+.dc-location-select.ant-select .ant-select-arrow {
+  color: #999 !important;
 }

@@ -388,7 +388,109 @@ export async function fetchNetworkInventory(
 }
 
 // =============================
+// TRACTION EXCEPTIONS API
+// =============================
+
+/**
+ * Open trip exception from API
+ */
+export interface OpenTripException {
+  noofopenlines: number;
+  route_id: number | null;
+  trip_id: number;
+  issueorder: string | null;
+  mdsprocessstatus: string | null;
+  mdsprocessmsg: string | null;
+  route_description: string | null;
+  driver1: string | null;
+  tractionstatus: string | null;
+  tractionmsg: string | null;
+}
+
+/**
+ * Traction exceptions API response
+ */
+export interface TractionExceptionsResponse {
+  data: OpenTripException[];
+  total: number;
+  org_id: number;
+}
+
+/**
+ * Fetch open trip exceptions (traction exceptions)
+ * Endpoint: GET /api/v1/exceptions/open-trips?org_id={org_id}
+ *
+ * @param orgId - Organization ID (defaults to DEFAULT_DC)
+ * @returns Array of open trip exception records
+ */
+export async function fetchTractionExceptions(
+  orgId: number = DEFAULT_DC
+): Promise<OpenTripException[]> {
+  try {
+    const response = await apiClient.get<TractionExceptionsResponse | OpenTripException[]>(
+      '/api/v1/exceptions/open-trips',
+      {
+        params: { org_id: orgId },
+      }
+    );
+
+    const responseData = response.data;
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+    if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    return [];
+  } catch (error) {
+    const apiError = formatError(error);
+    console.error('[API] Failed to fetch traction exceptions:', apiError);
+    throw apiError;
+  }
+}
+
+// =============================
+// DC LOCATIONS API
+// =============================
+
+/**
+ * DC Location from API
+ */
+export interface DCLocation {
+  organization_id: number;
+  location_code: string;
+  location_name?: string;
+}
+
+/**
+ * Fetch DC locations
+ * Endpoint: GET /api/v1/dc-locations
+ *
+ * @returns Array of DC location records
+ */
+export async function fetchDCLocations(): Promise<DCLocation[]> {
+  try {
+    const response = await apiClient.get<DCLocation[] | { data?: DCLocation[] }>(
+      '/api/v1/dc-locations'
+    );
+
+    const responseData = response.data;
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+    if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    return [];
+  } catch (error) {
+    const apiError = formatError(error);
+    console.error('[API] Failed to fetch DC locations:', apiError);
+    throw apiError;
+  }
+}
+
+// =============================
 // EXPORTS
 // =============================
 
-export { apiClient, API_BASE_URL };
+export { apiClient, API_BASE_URL, DEFAULT_DC };

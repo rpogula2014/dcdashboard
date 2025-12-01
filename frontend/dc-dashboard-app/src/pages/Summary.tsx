@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card, Row, Col, Progress, Typography } from 'antd';
 import { ExclamationCircleFilled, WarningFilled, CheckCircleOutlined, CarOutlined } from '@ant-design/icons';
-import { KPICard } from '../components/Dashboard';
+import { KPICard, ExceptionsCard } from '../components/Dashboard';
 import { useOrderContext } from '../contexts';
 
 const { Text } = Typography;
@@ -144,6 +144,9 @@ export function Summary() {
           <KPICard key={index} {...kpi} />
         ))}
       </div>
+
+      {/* Exceptions Section */}
+      <ExceptionsCard orders={allOrders} />
     </div>
   );
 }

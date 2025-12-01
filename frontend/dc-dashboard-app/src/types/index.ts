@@ -56,7 +56,6 @@ export type PageKey =
   | 'summary'
   | 'routeTruck'
   | 'otherShipMethods'
-  | 'exceptions'
   | 'isos'
   | 'onhand'
   | 'cycleCount'
