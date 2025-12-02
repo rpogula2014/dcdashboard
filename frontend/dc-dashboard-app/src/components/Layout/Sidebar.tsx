@@ -10,6 +10,7 @@ import {
   MenuUnfoldOutlined,
   BarChartOutlined,
   EnvironmentOutlined,
+  CloudOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
 import { useOrderContext, useDCContext } from '../../contexts';
@@ -88,6 +89,18 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     // Divider
     { type: 'divider' },
 
+    // Descartes Section
+    {
+      type: 'group',
+      label: !collapsed ? 'Descartes' : null,
+      children: [
+        createMenuItem('descartes', 'Descartes Planned', <CloudOutlined />, undefined, undefined, collapsed),
+      ],
+    },
+
+    // Divider
+    { type: 'divider' },
+
     // Analytics Section
     createMenuItem('analytics', 'Analytics', <BarChartOutlined />, undefined, undefined, collapsed),
   ], [badgeCounts, collapsed]);
@@ -143,7 +156,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             placeholder="Select DC"
             suffixIcon={<EnvironmentOutlined />}
             className="dc-location-select"
-            popupClassName="dc-location-dropdown"
+            classNames={{ popup: { root: 'dc-location-dropdown' } }}
           />
         )}
       </div>

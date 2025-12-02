@@ -83,67 +83,96 @@ function filterExceptions(orders: OrderRow[]): OrderRow[] {
 }
 
 /**
+ * Helper to calculate total units from orders
+ */
+function calculateTotalUnits(orders: OrderRow[]): number {
+  return orders.reduce((sum, o) => sum + (o.raw.ordered_quantity ?? 0), 0);
+}
+
+/**
  * Calculate KPI data from orders
  */
 function calculateKPIData(orders: OrderRow[]): KPIData[] {
   const routeTruckOrders = filterByShipMethod(orders, true);
-  const otherOrders = filterByShipMethod(orders, false);
+  const otherOrdersAll = filterByShipMethod(orders, false);
+  // Separate ISOs from other ship methods
+  const isoOrders = otherOrdersAll.filter((o) => o.raw.order_category === 'INTERNAL ORDER');
+  const otherOrders = otherOrdersAll.filter((o) => o.raw.order_category !== 'INTERNAL ORDER');
   const exceptionOrders = filterExceptions(orders);
 
-  const totalOrders = orders.length;
-  const routedOrders = routeTruckOrders.filter((o) => o.routing === 'success').length;
-  const notRoutedOrders = routeTruckOrders.filter((o) => o.routing === 'pending').length;
-  const criticalExceptions = exceptionOrders.filter((o) => o.exception === 'critical').length;
-  const warningExceptions = exceptionOrders.filter((o) => o.exception === 'warning').length;
+  // Line counts
+  const totalLines = orders.length;
+  const routedLines = routeTruckOrders.filter((o) => o.routing === 'success');
+  const notRoutedLines = routeTruckOrders.filter((o) => o.routing === 'pending');
+  const criticalLines = exceptionOrders.filter((o) => o.exception === 'critical');
+  const warningLines = exceptionOrders.filter((o) => o.exception === 'warning');
+
+  // Unit totals
+  const totalUnits = calculateTotalUnits(orders);
+  const routeTruckUnits = calculateTotalUnits(routeTruckOrders);
+  const otherUnits = calculateTotalUnits(otherOrders);
+  const isoUnits = calculateTotalUnits(isoOrders);
+  const exceptionUnits = calculateTotalUnits(exceptionOrders);
+  const onHoldUnits = calculateTotalUnits(criticalLines);
+  const notRoutedUnits = calculateTotalUnits(notRoutedLines);
 
   return [
     {
-      title: 'Total Orders',
-      value: totalOrders,
+      title: 'Total Lines',
+      value: totalLines,
       progress: 100,
-      footer: `${totalOrders} lines to ship today`,
+      footer: `${totalUnits.toLocaleString()} units to ship`,
       color: 'blue',
     },
     {
       title: 'Route Truck',
       value: routeTruckOrders.length,
       progress: routeTruckOrders.length > 0
-        ? Math.round((routedOrders / routeTruckOrders.length) * 100)
+        ? Math.round((routedLines.length / routeTruckOrders.length) * 100)
         : 0,
-      footer: `${routedOrders} routed, ${notRoutedOrders} pending`,
+      footer: `${routeTruckUnits.toLocaleString()} units | ${routedLines.length} routed, ${notRoutedLines.length} pending`,
       color: 'green',
     },
     {
       title: 'Other Ship Methods',
       value: otherOrders.length,
-      progress: totalOrders > 0
-        ? Math.round((otherOrders.length / totalOrders) * 100)
+      progress: totalLines > 0
+        ? Math.round((otherOrders.length / totalLines) * 100)
         : 0,
-      footer: 'UPS, FedEx, LTL, Will Call',
+      footer: `${otherUnits.toLocaleString()} units | UPS, FedEx, LTL, Pickup`,
       color: 'blue',
+    },
+    {
+      title: 'ISOs',
+      value: isoOrders.length,
+      progress: totalLines > 0
+        ? Math.round((isoOrders.length / totalLines) * 100)
+        : 0,
+      footer: `${isoUnits.toLocaleString()} units | Internal Orders`,
+      color: 'purple',
     },
     {
       title: 'Exceptions',
       value: exceptionOrders.length,
-      progress: totalOrders > 0
-        ? Math.round((exceptionOrders.length / totalOrders) * 100)
+      progress: totalLines > 0
+        ? Math.round((exceptionOrders.length / totalLines) * 100)
         : 0,
-      footer: `${criticalExceptions} critical, ${warningExceptions} warnings`,
+      footer: `${exceptionUnits.toLocaleString()} units | ${criticalLines.length} critical, ${warningLines.length} warnings`,
       color: exceptionOrders.length > 0 ? 'red' : 'green',
     },
     {
       title: 'On Hold',
-      value: criticalExceptions,
-      progress: criticalExceptions > 0 ? 100 : 0,
-      footer: 'Requires immediate attention',
-      color: criticalExceptions > 0 ? 'red' : 'green',
+      value: criticalLines.length,
+      progress: criticalLines.length > 0 ? 100 : 0,
+      footer: `${onHoldUnits.toLocaleString()} units | Requires attention`,
+      color: criticalLines.length > 0 ? 'red' : 'green',
     },
     {
       title: 'Not Routed',
-      value: notRoutedOrders,
-      progress: notRoutedOrders > 0 ? 100 : 0,
-      footer: 'Route Truck orders pending routing',
-      color: notRoutedOrders > 0 ? 'orange' : 'green',
+      value: notRoutedLines.length,
+      progress: notRoutedLines.length > 0 ? 100 : 0,
+      footer: `${notRoutedUnits.toLocaleString()} units | Route Truck pending`,
+      color: notRoutedLines.length > 0 ? 'orange' : 'green',
     },
   ];
 }

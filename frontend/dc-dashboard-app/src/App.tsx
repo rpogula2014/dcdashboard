@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
 import { Sidebar, Header } from './components/Layout';
-import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics } from './pages';
+import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes } from './pages';
 import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext } from './contexts';
 import type { PageKey, RefreshInterval } from './types';
 import './App.css';
@@ -25,12 +25,13 @@ const dcDashboardTheme = {
 const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
   summary: { title: 'Summary', subtitle: 'Overview' },
   routeTruck: { title: 'Route Truck', subtitle: 'Local Delivery' },
-  otherShipMethods: { title: 'Other Ship Methods', subtitle: 'UPS, FedEx, LTL' },
+  otherShipMethods: { title: 'Other Ship Methods', subtitle: 'UPS, FedEx, LTL, Pickup' },
   isos: { title: 'ISOs', subtitle: 'Internal Service Orders' },
   onhand: { title: 'On Hand', subtitle: 'Inventory' },
   cycleCount: { title: 'Cycle Count', subtitle: 'Inventory' },
   traction: { title: 'Traction', subtitle: 'Analytics' },
   analytics: { title: 'Analytics', subtitle: 'Reports & Insights' },
+  descartes: { title: 'Descartes Planned', subtitle: 'Route Plans' },
 };
 
 /**
@@ -75,6 +76,8 @@ function AppContent() {
         return <ISOs />;
       case 'analytics':
         return <Analytics />;
+      case 'descartes':
+        return <Descartes />;
       default:
         return <Summary />;
     }
@@ -87,7 +90,7 @@ function AppContent() {
     return (
       <Layout className="app-layout">
         <div className="loading-container">
-          <Spin size="large" tip="Loading orders..." />
+          <Spin size="large">Loading orders...</Spin>
         </div>
       </Layout>
     );

@@ -24,6 +24,10 @@ export interface OrderFiltersState {
   noISOs: boolean;
   dueToday: boolean;
   backorder: boolean;
+  planned: boolean;
+  notPlanned: boolean;
+  inDescartes: boolean;
+  notInDescartes: boolean;
   ignoreShipped: boolean;
 }
 
@@ -43,6 +47,10 @@ const initialFilters: OrderFiltersState = {
   noISOs: false,
   dueToday: false,
   backorder: false,
+  planned: false,
+  notPlanned: false,
+  inDescartes: false,
+  notInDescartes: false,
   ignoreShipped: false,
 };
 
@@ -250,6 +258,30 @@ export function useOrderFilters(orders: OrderRow[]): UseOrderFiltersResult {
         }
       }
 
+      if (filters.planned) {
+        if (order.raw.planned !== 'Y') {
+          return false;
+        }
+      }
+
+      if (filters.notPlanned) {
+        if (order.raw.planned === 'Y') {
+          return false;
+        }
+      }
+
+      if (filters.inDescartes) {
+        if (order.raw.routed !== 'Y') {
+          return false;
+        }
+      }
+
+      if (filters.notInDescartes) {
+        if (order.raw.routed === 'Y') {
+          return false;
+        }
+      }
+
       return true;
     });
   }, [orders, filters, multiLineShipSetKeys]);
@@ -286,6 +318,10 @@ export function useOrderFilters(orders: OrderRow[]): UseOrderFiltersResult {
       filters.noISOs ||
       filters.dueToday ||
       filters.backorder ||
+      filters.planned ||
+      filters.notPlanned ||
+      filters.inDescartes ||
+      filters.notInDescartes ||
       filters.ignoreShipped
     );
   }, [filters]);
@@ -310,8 +346,8 @@ interface OrderFiltersPanelProps {
   onClearFilters: () => void;
   onApplyPreset?: (presetKey: string) => void;
   showRoutingFilter?: boolean;
+  showPlannedFilter?: boolean;
   defaultExpanded?: boolean;
-  autoCollapse?: boolean;
 }
 
 // Filter panel UI component
@@ -323,21 +359,10 @@ export function OrderFiltersPanel({
   onClearFilters,
   onApplyPreset,
   showRoutingFilter = true,
+  showPlannedFilter = false,
   defaultExpanded = true,
-  autoCollapse = false,
 }: OrderFiltersPanelProps) {
   const [filtersExpanded, setFiltersExpanded] = useState<string[]>(defaultExpanded ? ['filters'] : []);
-
-  // Wrapper for filter change that handles auto-collapse
-  const handleFilterChangeWithCollapse = <K extends keyof OrderFiltersState>(key: K, value: OrderFiltersState[K]) => {
-    onFilterChange(key, value);
-    if (autoCollapse) {
-      // Collapse after a short delay to let the user see the change
-      setTimeout(() => {
-        setFiltersExpanded([]);
-      }, 300);
-    }
-  };
 
   return (
     <Collapse
@@ -374,12 +399,7 @@ export function OrderFiltersPanel({
                     <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '2px' }}>Quick Presets</label>
                     <Select
                       placeholder="Select preset..."
-                      onChange={(value) => {
-                        onApplyPreset(value);
-                        if (autoCollapse) {
-                          setTimeout(() => setFiltersExpanded([]), 300);
-                        }
-                      }}
+                      onChange={(value) => onApplyPreset(value)}
                       options={filterPresets.map(p => ({
                         value: p.key,
                         label: p.label,
@@ -486,50 +506,82 @@ export function OrderFiltersPanel({
                 {showRoutingFilter && (
                   <Checkbox
                     checked={filters.reservedNotRouted}
-                    onChange={(e) => handleFilterChangeWithCollapse('reservedNotRouted', e.target.checked)}
+                    onChange={(e) => onFilterChange('reservedNotRouted', e.target.checked)}
                   >
                     <span style={{ fontSize: '12px' }}>Reserved/Not Routed</span>
                   </Checkbox>
                 )}
                 <Checkbox
                   checked={filters.hasActiveHolds}
-                  onChange={(e) => handleFilterChangeWithCollapse('hasActiveHolds', e.target.checked)}
+                  onChange={(e) => onFilterChange('hasActiveHolds', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Active Holds</span>
                 </Checkbox>
                 <Checkbox
                   checked={filters.multiLineShipSet}
-                  onChange={(e) => handleFilterChangeWithCollapse('multiLineShipSet', e.target.checked)}
+                  onChange={(e) => onFilterChange('multiLineShipSet', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Multi-line Ship Set</span>
                 </Checkbox>
                 <Checkbox
                   checked={filters.hasISOs}
-                  onChange={(e) => handleFilterChangeWithCollapse('hasISOs', e.target.checked)}
+                  onChange={(e) => onFilterChange('hasISOs', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Has ISOs</span>
                 </Checkbox>
                 <Checkbox
                   checked={filters.noISOs}
-                  onChange={(e) => handleFilterChangeWithCollapse('noISOs', e.target.checked)}
+                  onChange={(e) => onFilterChange('noISOs', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>No ISOs</span>
                 </Checkbox>
                 <Checkbox
                   checked={filters.dueToday}
-                  onChange={(e) => handleFilterChangeWithCollapse('dueToday', e.target.checked)}
+                  onChange={(e) => onFilterChange('dueToday', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Due Today</span>
                 </Checkbox>
                 <Checkbox
                   checked={filters.backorder}
-                  onChange={(e) => handleFilterChangeWithCollapse('backorder', e.target.checked)}
+                  onChange={(e) => onFilterChange('backorder', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Backorder</span>
                 </Checkbox>
+                {showPlannedFilter && (
+                  <Checkbox
+                    checked={filters.planned}
+                    onChange={(e) => onFilterChange('planned', e.target.checked)}
+                  >
+                    <span style={{ fontSize: '12px' }}>Planned</span>
+                  </Checkbox>
+                )}
+                {showPlannedFilter && (
+                  <Checkbox
+                    checked={filters.notPlanned}
+                    onChange={(e) => onFilterChange('notPlanned', e.target.checked)}
+                  >
+                    <span style={{ fontSize: '12px' }}>Not Planned</span>
+                  </Checkbox>
+                )}
+                {showPlannedFilter && (
+                  <Checkbox
+                    checked={filters.inDescartes}
+                    onChange={(e) => onFilterChange('inDescartes', e.target.checked)}
+                  >
+                    <span style={{ fontSize: '12px' }}>In Descartes</span>
+                  </Checkbox>
+                )}
+                {showPlannedFilter && (
+                  <Checkbox
+                    checked={filters.notInDescartes}
+                    onChange={(e) => onFilterChange('notInDescartes', e.target.checked)}
+                  >
+                    <span style={{ fontSize: '12px' }}>Not In Descartes</span>
+                  </Checkbox>
+                )}
                 <Checkbox
                   checked={filters.ignoreShipped}
-                  onChange={(e) => handleFilterChangeWithCollapse('ignoreShipped', e.target.checked)}
+                  onChange={(e) => onFilterChange('ignoreShipped', e.target.checked)}
                 >
                   <span style={{ fontSize: '12px' }}>Ignore Shipped</span>
                 </Checkbox>

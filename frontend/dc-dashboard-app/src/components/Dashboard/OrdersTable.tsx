@@ -10,6 +10,7 @@ interface OrdersTableProps {
   title?: string;
   showShipMethod?: boolean;
   showRouting?: boolean;
+  showPlanned?: boolean;
   pagination?: TablePaginationConfig | false;
   onRowClick?: (order: OrderRow) => void;
 }
@@ -39,6 +40,7 @@ export function OrdersTable({
   title,
   showShipMethod = true,
   showRouting = true,
+  showPlanned = false,
   pagination = {
     defaultPageSize: 50,
     showSizeChanger: true,
@@ -147,7 +149,7 @@ export function OrdersTable({
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 150,
+      width: 100,
       filters: [
         { text: 'Ready to Release', value: 'Ready to Release' },
         { text: 'Awaiting Shipping', value: 'Awaiting Shipping' },
@@ -270,7 +272,7 @@ export function OrdersTable({
       },
     },
     ...(showRouting ? [{
-      title: 'Routing',
+      title: 'Sent To Descartes',
       dataIndex: 'routing',
       key: 'routing',
       width: 80,
@@ -295,6 +297,33 @@ export function OrdersTable({
         }
         return (
           <Tooltip title="Not Routed">
+            <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+          </Tooltip>
+        );
+      },
+    }] : []),
+    ...(showPlanned ? [{
+      title: 'Planned In Descartes',
+      key: 'planned',
+      width: 80,
+      align: 'center' as const,
+      filters: [
+        { text: 'Planned', value: 'Y' },
+        { text: 'Not Planned', value: 'N' },
+      ],
+      onFilter: (value: boolean | React.Key, record: OrderRow) =>
+        record.raw.planned === value,
+      render: (_: unknown, record: OrderRow) => {
+        const isPlanned = record.raw.planned === 'Y';
+        if (isPlanned) {
+          return (
+            <Tooltip title="Planned">
+              <CheckCircleFilled style={{ color: '#1890ff' }} />
+            </Tooltip>
+          );
+        }
+        return (
+          <Tooltip title="Not Planned">
             <CloseCircleFilled style={{ color: '#ff4d4f' }} />
           </Tooltip>
         );
@@ -338,6 +367,7 @@ export function OrdersTable({
           style: onRowClick ? { cursor: 'pointer' } : undefined,
         })}
         scroll={{ x: 900 }}
+        sticky
         size="middle"
       />
     </div>

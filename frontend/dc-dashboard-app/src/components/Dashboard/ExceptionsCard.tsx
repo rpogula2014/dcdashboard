@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Typography, Table, Spin, Tag, Tooltip } from 'antd';
-import { ExclamationCircleFilled, WarningFilled, AlertOutlined } from '@ant-design/icons';
+import { ExclamationCircleFilled, WarningFilled, AlertOutlined, ReloadOutlined } from '@ant-design/icons';
 import { fetchTractionExceptions, type OpenTripException } from '../../services/api';
 import { useDCContext, useRefreshContext } from '../../contexts';
 import type { OrderRow } from '../../types';
@@ -190,19 +190,33 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
     >
       {/* Traction Exceptions */}
       <div style={{ marginBottom: tractionExceptions.length > 0 && shipSetExceptions.length > 0 ? 24 : 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <ExclamationCircleFilled style={{ color: '#ff4d4f' }} />
-          <Text strong>Traction Exceptions</Text>
-          <span style={{
-            background: '#fff1f0',
-            color: '#ff4d4f',
-            padding: '2px 8px',
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-          }}>
-            {tractionExceptions.length}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ExclamationCircleFilled style={{ color: '#ff4d4f' }} />
+            <Text strong>Traction Exceptions</Text>
+            <span style={{
+              background: '#fff1f0',
+              color: '#ff4d4f',
+              padding: '2px 8px',
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 600,
+            }}>
+              {tractionExceptions.length}
+            </span>
+          </div>
+          <Tooltip title="Refresh exceptions">
+            <ReloadOutlined
+              style={{
+                fontSize: 14,
+                color: '#1890ff',
+                cursor: 'pointer',
+                padding: 4,
+              }}
+              spin={tractionLoading}
+              onClick={() => loadTractionExceptions(false)}
+            />
+          </Tooltip>
         </div>
         {tractionLoading ? (
           <div style={{ textAlign: 'center', padding: 20 }}>
@@ -260,9 +274,11 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
                   title: 'Issue Orders',
                   dataIndex: 'issueorder',
                   key: 'issueorder',
-                  ellipsis: true,
+                  width: 200,
                   render: (text: string | null) => (
-                    <code className="item-code">{text || '-'}</code>
+                    <code className="item-code" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                      {text || '-'}
+                    </code>
                   ),
                 },
                 {

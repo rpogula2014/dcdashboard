@@ -24,11 +24,17 @@ export function RouteTruck() {
   const notRoutedOrders = filteredOrders.filter(o => o.routing === 'pending');
   const routedOrders = filteredOrders.filter(o => o.routing === 'success');
 
+  // Planned status
+  const plannedOrders = filteredOrders.filter(o => o.raw.planned === 'Y');
+  const notPlannedOrders = filteredOrders.filter(o => o.raw.planned !== 'Y');
+
   // Calculate totals
   const totalUnits = filteredOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
   const uniqueOrders = new Set(filteredOrders.map(o => o.orderNumber)).size;
   const routedUnits = routedOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
   const pendingUnits = notRoutedOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
+  const plannedUnits = plannedOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
+  const notPlannedUnits = notPlannedOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
 
   return (
     <div className="page-content">
@@ -41,7 +47,7 @@ export function RouteTruck() {
         onClearFilters={clearFilters}
         onApplyPreset={applyPreset}
         showRoutingFilter={true}
-        autoCollapse={true}
+        showPlannedFilter={true}
       />
 
       {/* Alert for not routed orders */}
@@ -81,7 +87,7 @@ export function RouteTruck() {
             <span style={{ color: '#333', fontWeight: '600' }}>{totalUnits.toLocaleString()}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#52c41a' }} />
             <span style={{ color: '#999', fontSize: '12px' }}>Routed:</span>
@@ -94,6 +100,19 @@ export function RouteTruck() {
             <span style={{ color: '#faad14', fontWeight: '600' }}>{notRoutedOrders.length} lines</span>
             <span style={{ color: '#999', fontSize: '11px' }}>({pendingUnits.toLocaleString()} units)</span>
           </div>
+          <div style={{ width: '1px', height: '16px', background: '#e8e8e8' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#1890ff' }} />
+            <span style={{ color: '#999', fontSize: '12px' }}>Planned:</span>
+            <span style={{ color: '#1890ff', fontWeight: '600' }}>{plannedOrders.length} lines</span>
+            <span style={{ color: '#999', fontSize: '11px' }}>({plannedUnits.toLocaleString()} units)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff4d4f' }} />
+            <span style={{ color: '#999', fontSize: '12px' }}>Not Planned:</span>
+            <span style={{ color: '#ff4d4f', fontWeight: '600' }}>{notPlannedOrders.length} lines</span>
+            <span style={{ color: '#999', fontSize: '11px' }}>({notPlannedUnits.toLocaleString()} units)</span>
+          </div>
         </div>
       </div>
 
@@ -101,6 +120,7 @@ export function RouteTruck() {
       <OrdersTable
         data={filteredOrders}
         showShipMethod={false}
+        showPlanned={true}
         pagination={{
           defaultPageSize: 50,
           showSizeChanger: true,

@@ -35,6 +35,13 @@ const colorConfig = {
     glow: 'rgba(248, 81, 73, 0.3)',
     accent: '#f85149',
   },
+  purple: {
+    gradient: 'linear-gradient(135deg, #8957e5 0%, #a371f7 100%)',
+    progressStroke: '#a371f7',
+    progressTrail: 'rgba(163, 113, 247, 0.15)',
+    glow: 'rgba(163, 113, 247, 0.3)',
+    accent: '#a371f7',
+  },
 };
 
 export function KPICard({
@@ -77,7 +84,7 @@ export function KPICard({
             percent={progress}
             showInfo={false}
             strokeColor={colors.progressStroke}
-            trailColor={colors.progressTrail}
+            railColor={colors.progressTrail}
             size="small"
           />
           <span

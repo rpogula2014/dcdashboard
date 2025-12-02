@@ -143,28 +143,22 @@ WITH iteminfo
            SET_NAME,
            A.header_id,
            '' AS shiptoaddressee,
-           wdd.delivery_id,
-           CASE
-               WHEN ORIGINAL_LINE_STATUS IS NULL THEN
-                   CASE
-                       WHEN wdd1.released_Status = 'R' THEN 'Ready to Release'
-                       WHEN wdd1.released_Status = 'B' THEN 'Backordered'
-                       ELSE NULL
-                   END
-               ELSE ORIGINAL_LINE_STATUS
-           END AS ORIGINAL_LINE_STATUS
+           null delivery_id,
+            CASE
+                WHEN wdd1.released_Status = 'R' THEN 'Ready to Release'
+                WHEN wdd1.released_Status = 'B' THEN 'Backordered'
+                WHEN wdd1.released_Status  = 'S' THEN 'Released to Warehouse'
+                ELSE 'Unknown'
+            END  ORIGINAL_LINE_STATUS
            ,null trip_id
     FROM oe_order_lines_v a,
          mtl_reservations mr,
-         apps.wsh_Delivery_Details_oe_V wdd,
          apps.wsh_Delivery_Details wdd1,
          OE_SETS
          ,wsh_Carriers_v wcv
     WHERE a.ship_from_org_id = :dc
       AND a.open_flag = 'Y'
-      AND wdd.source_line_id(+) = a.line_id
       AND wdd1.source_line_id = a.line_id
-      AND wdd1.delivery_Detail_id = wdd.delivery_Detail_id(+)
       AND wdd1.source_code = 'OE'
       AND A.SHIP_sET_ID = SET_ID(+)
                               and wcv.freight_code = a.freight_carrier_code
@@ -175,6 +169,7 @@ WITH iteminfo
           'ATD STHVendor Direct Ship Line'
       )
       AND a.ordered_date > SYSDATE - :days_back
+      and not exists (select 1 from apps.wsh_Delivery_Details_oe_V wdd where wdd.delivery_Detail_id = wdd1.delivery_Detail_id)
 """
 
         # Add optional filters to CTE
@@ -205,8 +200,6 @@ WITH iteminfo
              SHIP_TO_ADDRESS5,
              SET_NAME,
              a.SHIPPING_INSTRUCTIONS,
-             delivery_id,
-             ORIGINAL_LINE_STATUS,
              a.attribute8,
              A.header_id,
              wdd1.released_Status 
@@ -307,22 +300,40 @@ WITH iteminfo
     , wdd1.released_Status
     ,trip_id
 )
-SELECT c.*,
-       CASE
-           WHEN (SELECT COUNT(1)
-                 FROM OE_HOLDS_HISTORY_V
-                 WHERE header_id = c.header_id) > 0
-           THEN 'Y'
-           ELSE 'N'
-       END AS holdapplied,
-       CASE
-           WHEN (SELECT COUNT(1)
-                 FROM OE_HOLDS_HISTORY_V
-                 WHERE header_id = c.header_id
-                   AND RELEASED_FLAG = 'Y') > 0
-           THEN 'Y'
-           ELSE 'N'
-       END AS holdreleased,
+SELECT c.*, 
+     case when NVL(
+         -- Priority 1: Latest Line-level hold
+         (SELECT case when count(1) > 0 then 1 else null end 
+          FROM oe_order_holds_all oh
+          WHERE oh.header_id = c.header_id
+            AND oh.line_id = c.line_id),
+         -- Priority 2: Latest Order-level hold  
+         (SELECT case when count(1) > 0 then 1 else null end 
+          FROM oe_order_holds_all oh
+          WHERE oh.header_id = c.header_id
+            AND oh.line_id IS NULL)
+       ) > 0
+       then 'Y' else 'N' end 
+     As holdapplied
+  ,case when NVL(
+         -- Priority 1: Latest Line-level hold
+         (select case when count(1) > 0 then 1 else null end from (SELECT released_flag
+          FROM oe_order_holds_all oh
+          WHERE oh.header_id = c.header_id
+            AND oh.line_id = c.line_id
+            and released_flag = 'Y'
+          ORDER BY oh.creation_date DESC, oh.order_hold_id DESC
+          FETCH FIRST 1 ROW ONLY)),
+         -- Priority 2: Latest Order-level hold  
+         (select case when count(1) > 0 then 1 else null end from (SELECT released_flag 
+          FROM oe_order_holds_all oh
+          WHERE oh.header_id = c.header_id
+            AND oh.line_id IS NULL
+            and released_flag = 'Y'
+          ORDER BY oh.creation_date DESC, oh.order_hold_id DESC
+          FETCH FIRST 1 ROW ONLY))
+       )   > 0
+       then 'Y' else 'N' end  holdreleased,
        CASE
            WHEN (SELECT COUNT(1)
                  FROM XXATDMSA_DCARTORDER_OBPAYLOAD
@@ -393,11 +404,29 @@ SELECT c.*,
        Where    inventory_item_id = c.inventory_item_id
           And organization_id = :dc
      ) As localplusqty
+       , Case
+     When (
+     Select COUNT(1)
+       From XXATDWMS_ROUTEPLAN_ORDER_IB line
+      Where    ORDER_LINE_ID = c.line_id
+         And Exists
+           (Select 1
+           From Xxatdwms_routeplan_route_ib hdr
+          Where    line.route_id = hdr.route_id
+             And ship_from_org_id = :dc
+             And route_start_date > TRUNC(SYSDATE))
+    ) > 0
+     Then
+      'Y'
+     Else
+      'N'
+    End
+     planned
 FROM opendcopenlines c, xxatdmrp_item_elements_v xie
 Where c.inventory_item_id = xie.inventory_item_id
  
 """
-        #logger.debug(sql)
+        logger.debug(sql)
         return sql
 
     def _map_row_to_model(self, row_dict: dict) -> DCOpenOrderLine:
@@ -448,5 +477,6 @@ Where c.inventory_item_id = xie.inventory_item_id
             item_description=row_dict.get("item_description"),
             trip_id=row_dict.get("trip_id"),
             localplusqtyexists=row_dict.get("localplusqtyexists"),
-            localplusqty=row_dict.get("localplusqty")
+            localplusqty=row_dict.get("localplusqty"),
+            planned=row_dict.get("planned")
         )

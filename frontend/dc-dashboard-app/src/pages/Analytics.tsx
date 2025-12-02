@@ -36,6 +36,15 @@ export function Analytics() {
     });
   }, [orderRows]);
 
+  // Calculate total backorder units
+  const totalBackorderUnits = useMemo(() => {
+    return backorderRows.reduce((sum, order) => {
+      const orderedQty = order.raw.ordered_quantity ?? 0;
+      const reservedQty = order.raw.reserved_qty ?? 0;
+      return sum + (orderedQty - reservedQty);
+    }, 0);
+  }, [backorderRows]);
+
   // Filter to shipped orders only
   const shippedRows = useMemo(() => {
     return orderRows.filter((order) => order.status === 'Shipped');
@@ -281,9 +290,14 @@ export function Analytics() {
                 Backorders
               </span>
               <div style={{ width: '1px', height: '14px', background: '#e8e8e8' }} />
-              <span style={{ color: '#999', fontSize: 11 }}>
-                {backorderRows.length} lines
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#999', fontSize: 11 }}>Lines:</span>
+                <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>{backorderRows.length}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#999', fontSize: 11 }}>Units:</span>
+                <span style={{ color: '#ff4d4f', fontWeight: 600, fontSize: 12 }}>{totalBackorderUnits.toLocaleString()}</span>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: '#999', fontSize: 11 }}>Group by:</span>

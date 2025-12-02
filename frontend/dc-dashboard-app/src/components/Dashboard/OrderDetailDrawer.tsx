@@ -270,7 +270,7 @@ export function OrderDetailDrawer({ order, open, onClose }: OrderDetailDrawerPro
           {raw.hold_applied !== 'Y' ? (
             <Empty description="No holds applied to this order" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : loadingHolds ? (
-            <Spin tip="Loading hold history..." />
+            <Spin size="small"><span>Loading hold history...</span></Spin>
           ) : holdError ? (
             <Alert type="error" message={holdError} showIcon />
           ) : holdHistory.length > 0 ? (
@@ -308,7 +308,7 @@ export function OrderDetailDrawer({ order, open, onClose }: OrderDetailDrawerPro
           {raw.routed !== 'Y' ? (
             <Empty description="Order is not routed" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           ) : loadingRouting ? (
-            <Spin tip="Loading routing information..." />
+            <Spin size="small"><span>Loading routing information...</span></Spin>
           ) : routingError ? (
             <Alert type="error" message={routingError} showIcon />
           ) : routingInfo.length > 0 ? (
@@ -347,7 +347,7 @@ export function OrderDetailDrawer({ order, open, onClose }: OrderDetailDrawerPro
             children: (
               <>
                 {loadingInventory ? (
-                  <Spin tip="Loading network inventory..." />
+                  <Spin size="small"><span>Loading network inventory...</span></Spin>
                 ) : inventoryError ? (
                   <Alert type="error" message={inventoryError} showIcon />
                 ) : networkInventory.length > 0 ? (

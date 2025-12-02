@@ -19,7 +19,12 @@ const METHOD_ORDER: string[] = [
 
 export function OtherShipMethods() {
   // Get data from context (connected to API)
-  const { otherShipMethodOrders: orders } = useOrderContext();
+  const { otherShipMethodOrders: allOrders } = useOrderContext();
+
+  // Filter out internal orders (ISOs are shown on their own page)
+  const orders = useMemo(() => {
+    return allOrders.filter(order => order.raw.order_category !== 'INTERNAL ORDER');
+  }, [allOrders]);
 
   // Use the reusable filter hook
   const {
@@ -56,6 +61,10 @@ export function OtherShipMethods() {
       return indexA - indexB;
     });
   }, [ordersByMethod]);
+
+  // Calculate totals similar to RouteTruck
+  const totalUnits = filteredOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
+  const uniqueOrders = new Set(filteredOrders.map(o => o.orderNumber)).size;
 
   // Create tab items
   const tabItems = sortedMethods.map(method => ({
@@ -97,30 +106,45 @@ export function OtherShipMethods() {
         onClearFilters={clearFilters}
         onApplyPreset={applyPreset}
         showRoutingFilter={false}
-        autoCollapse={true}
       />
 
       {/* Stats Summary Header */}
       <div className="stats-bar" style={{ flexWrap: 'wrap', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <InboxOutlined style={{ fontSize: '14px', color: '#1890ff' }} />
-          <span style={{ color: '#999', fontSize: '12px' }}>Total Orders:</span>
-          <span style={{ color: '#333', fontWeight: '600' }}>{filteredOrders.length}</span>
-          {hasActiveFilters && (
-            <span style={{ color: '#999', fontSize: '11px' }}>
-              (of {orders.length})
-            </span>
-          )}
-        </div>
-        <div style={{ width: '1px', height: '16px', background: '#e8e8e8' }} />
-        {sortedMethods.map(method => (
-          <div key={method} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ color: '#999', fontSize: '11px' }}>{method}:</span>
-            <span style={{ color: '#666', fontWeight: '500', fontSize: '11px' }}>
-              {ordersByMethod[method].length}
-            </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <InboxOutlined style={{ fontSize: '14px', color: '#1890ff' }} />
+            <span style={{ color: '#999', fontSize: '12px' }}>Orders:</span>
+            <span style={{ color: '#333', fontWeight: '600' }}>{uniqueOrders}</span>
           </div>
-        ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#999', fontSize: '12px' }}>Lines:</span>
+            <span style={{ color: '#333', fontWeight: '600' }}>{filteredOrders.length}</span>
+            {hasActiveFilters && (
+              <span style={{ color: '#999', fontSize: '11px' }}>(of {orders.length})</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#999', fontSize: '12px' }}>Units:</span>
+            <span style={{ color: '#333', fontWeight: '600' }}>{totalUnits.toLocaleString()}</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {sortedMethods.map(method => {
+            const methodOrders = ordersByMethod[method];
+            const methodUnits = methodOrders.reduce((sum, o) => sum + (o.orderedQty || 0), 0);
+            return (
+              <div key={method} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#999', fontSize: '11px' }}>{method}:</span>
+                <span style={{ color: '#1890ff', fontWeight: '500', fontSize: '11px' }}>
+                  {methodOrders.length} lines
+                </span>
+                <span style={{ color: '#999', fontSize: '10px' }}>
+                  ({methodUnits.toLocaleString()})
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Tabbed Ship Methods */}

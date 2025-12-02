@@ -4,7 +4,7 @@
  */
 
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
-import type { DCOpenOrderLine, ApiResponse } from '../types';
+import type { DCOpenOrderLine, ApiResponse, RoutePlanRaw } from '../types';
 
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -485,6 +485,43 @@ export async function fetchDCLocations(): Promise<DCLocation[]> {
   } catch (error) {
     const apiError = formatError(error);
     console.error('[API] Failed to fetch DC locations:', apiError);
+    throw apiError;
+  }
+}
+
+// =============================
+// DESCARTES ROUTE PLANS API
+// =============================
+
+/**
+ * Fetch Descartes route plans
+ * Endpoint: GET /api/v1/descartes/route-plans?dcid={dcid}
+ *
+ * @param dcid - DC/organization ID
+ * @returns Array of route plan records
+ */
+export async function fetchRoutePlans(
+  dcid: number = DEFAULT_DC
+): Promise<RoutePlanRaw[]> {
+  try {
+    const response = await apiClient.get<RoutePlanRaw[] | { data?: RoutePlanRaw[] }>(
+      '/api/v1/descartes/route-plans',
+      {
+        params: { dcid },
+      }
+    );
+
+    const responseData = response.data;
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+    if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    return [];
+  } catch (error) {
+    const apiError = formatError(error);
+    console.error('[API] Failed to fetch route plans:', apiError);
     throw apiError;
   }
 }

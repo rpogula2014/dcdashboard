@@ -57,6 +57,7 @@ class DCOpenOrderLine(BaseModel):
     trip_id: Optional[int] = Field(None, description="Trip ID")
     localplusqtyexists: Optional[str] = Field(None, description="Y/N flag if localplusqtyexists")
     localplusqty: Optional[float] = Field(None, description="Local+ quantity")
+    planned: Optional[str] = Field(None, description="Y/N flag if order is planned")
     
 
     class Config:
@@ -97,6 +98,7 @@ class DCOpenOrderLine(BaseModel):
                 "hold_applied": "N",
                 "hold_released": "N",
                 "routed": "Y",
+                "planned": "Y",
             }
         }
 

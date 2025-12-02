@@ -115,7 +115,7 @@ export function Summary() {
               <Progress
                 percent={shippingProgress.unitsPercent}
                 strokeColor="#52c41a"
-                trailColor="#f0f0f0"
+                railColor="#f0f0f0"
                 size="small"
               />
             </div>
@@ -130,7 +130,7 @@ export function Summary() {
               <Progress
                 percent={shippingProgress.linesPercent}
                 strokeColor="#1890ff"
-                trailColor="#f0f0f0"
+                railColor="#f0f0f0"
                 size="small"
               />
             </div>
