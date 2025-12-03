@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { RoutePlanRaw, Route, RouteStop, RouteOrderLine } from '../types';
+import type { RoutePlanRaw, Route, RouteOrderLine } from '../types';
 import { fetchRoutePlans, type ApiError } from '../services/api';
 
 export interface UseRoutePlansResult {

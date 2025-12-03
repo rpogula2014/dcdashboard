@@ -527,6 +527,62 @@ export async function fetchRoutePlans(
 }
 
 // =============================
+// DC ONHAND INVENTORY API
+// =============================
+
+/**
+ * DC Onhand inventory item from API
+ */
+export interface DCOnhandItem {
+  inventory_item_id: number;
+  itemnumber: string;
+  item_description: string | null;
+  subinventory_code: string;
+  quantity: number;
+  locator: string | null;
+  aisle: string | null;
+  CustomSubinventory: string | null;
+  vendor: string | null;
+  product_group: string | null;
+  productgrp_display: string | null;
+  vendor_display: string | null;
+  style: string | null;
+}
+
+/**
+ * Fetch DC onhand inventory
+ * Endpoint: GET /api/v1/inventory/dc-onhand?dcid={dcid}
+ *
+ * @param dcid - DC/organization ID
+ * @returns Array of DC onhand inventory items
+ */
+export async function fetchDCOnhand(
+  dcid: number = DEFAULT_DC
+): Promise<DCOnhandItem[]> {
+  try {
+    const response = await apiClient.get<DCOnhandItem[] | { data?: DCOnhandItem[] }>(
+      '/api/v1/inventory/dc-onhand',
+      {
+        params: { dcid },
+      }
+    );
+
+    const responseData = response.data;
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+    if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    return [];
+  } catch (error) {
+    const apiError = formatError(error);
+    console.error('[API] Failed to fetch DC onhand inventory:', apiError);
+    throw apiError;
+  }
+}
+
+// =============================
 // EXPORTS
 // =============================
 

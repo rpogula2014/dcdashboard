@@ -426,7 +426,7 @@ FROM opendcopenlines c, xxatdmrp_item_elements_v xie
 Where c.inventory_item_id = xie.inventory_item_id
  
 """
-        logger.debug(sql)
+        #logger.debug(sql)
         return sql
 
     def _map_row_to_model(self, row_dict: dict) -> DCOpenOrderLine:

@@ -123,7 +123,7 @@ export async function executeQuery<T = Record<string, unknown>>(
  * Execute a SQL query and return the Arrow table directly
  * Useful for large result sets
  */
-export async function executeQueryRaw(sql: string): Promise<duckdb.Table> {
+export async function executeQueryRaw(sql: string): Promise<ReturnType<Awaited<ReturnType<typeof getConnection>>['query']>> {
   const conn = await getConnection();
   return conn.query(sql);
 }

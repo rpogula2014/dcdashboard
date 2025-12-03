@@ -1,6 +1,7 @@
 # Requirements: DC Dashboard
 
 *Generated from conversation on 2025-11-30*
+*Updated: 2025-12-03 - Added Inventory section (Onhand page with drill-down)*
 
 ## Objective
 [HIGH] Build a centralized operations dashboard for Distribution Centers (DCs) to track open orders, daily shipments, ship methods, and integration status - providing a single tool for DC staff to monitor and manage their order fulfillment workflow.
@@ -25,9 +26,16 @@
 - [MEDIUM] **Status Icons** - Success/fail/pending/N/A indicators for integrations
 
 ### Could Have (Low Priority / Future)
-- [LOW] **Inventory Pages** - Onhand and Cycle Count views (v2)
+- [LOW] ~~**Inventory Pages** - Onhand and Cycle Count views~~ ✅ **IMPLEMENTED** (Onhand complete, Cycle Count placeholder)
 - [LOW] **Analytics/Traction** - Performance metrics and trends (v2)
 - [LOW] **Page-level Filters** - Additional filtering within each page
+
+### Inventory Section (Added 2025-12-03)
+- [HIGH] **Onhand Page** - 5-level drill-down view of DC inventory ✅
+  - Hierarchy: Subinventory → Aisle → Locator → Product Group → Items
+  - API: `GET /api/v1/inventory/dc-onhand?dcid={dcid}`
+  - Features: Search, stats cards (distinct counts), responsive layout
+- [MEDIUM] **Cycle Counts Page** - Placeholder for future implementation ⬜
 
 ## Technical Constraints
 - **Framework/Stack:** React 18 + TypeScript + Ant Design (antd)
@@ -91,7 +99,7 @@ Key fields from `DCOpenOrderLine`:
 src/
 ├── components/
 │   ├── Layout/
-│   │   ├── Sidebar.tsx      # Collapsible navigation
+│   │   ├── Sidebar.tsx      # Collapsible navigation (includes Inventory section)
 │   │   ├── Header.tsx       # Page header with refresh controls
 │   │   └── index.ts
 │   ├── Dashboard/
@@ -107,11 +115,27 @@ src/
 │   ├── OtherShipMethods.tsx # Non-route truck orders
 │   ├── Exceptions.tsx       # Exception orders view
 │   ├── ISOs.tsx             # Internal Service Orders view
+│   ├── Onhand.tsx           # Inventory onhand drill-down (NEW)
+│   ├── Onhand.css           # Onhand page styles (NEW)
+│   ├── CycleCount.tsx       # Cycle count placeholder (NEW)
+│   └── index.ts
+├── hooks/
+│   ├── useOnhand.ts         # Onhand data hook with hierarchy transform (NEW)
 │   └── index.ts
 ├── types/
 │   └── index.ts             # TypeScript definitions
 ├── services/
-│   └── api.ts               # API integration
+│   ├── api.ts               # API integration (includes fetchDCOnhand)
+│   └── nlToSql/             # NL-to-SQL service (refactored into modules)
+│       ├── index.ts
+│       ├── config.ts
+│       ├── schemaContext.ts
+│       ├── validation.ts
+│       ├── mockQueries.ts
+│       ├── llmClient.ts
+│       ├── queryExecutor.ts
+│       ├── errors.ts
+│       └── typeMappers.ts
 ├── mock/
 │   └── data.ts              # Mock data for development
 └── App.tsx                  # Main app with routing
@@ -131,7 +155,7 @@ How we know this is complete and working:
 - [ ] ISOs page filters orders by order_category = "INTERNAL ORDER"
 
 ## Out of Scope (v1)
-- Inventory pages (Onhand, Cycle Count)
+- ~~Inventory pages (Onhand, Cycle Count)~~ ✅ **NOW IN SCOPE** - Onhand implemented
 - Analytics/Traction page
 - Multi-DC support
 - Role-based access control
@@ -161,3 +185,47 @@ How we know this is complete and working:
 - [ADDED] Success criteria for ISOs page filtering
 
 **Reason:** User requested a dedicated sidebar page for Internal Orders to separate them from other order types for easier tracking and management.
+
+### 2025-12-03 - Added Inventory Section (Onhand Page)
+
+**Changes Made:**
+- [ADDED] **Inventory Section** to sidebar navigation with Onhand and Cycle Counts tabs
+- [ADDED] **Onhand Page** with 5-level drill-down hierarchy:
+  - Subinventory → Aisle → Locator → Product Group → Items table
+- [ADDED] `fetchDCOnhand()` API function to `api.ts`
+  - Endpoint: `GET /api/v1/inventory/dc-onhand?dcid={dcid}`
+- [ADDED] `useOnhand` hook (`src/hooks/useOnhand.ts`)
+  - Transforms flat API data into hierarchical structure
+  - Calculates distinct counts for stats cards
+- [ADDED] `Onhand.tsx` page with collapsible drill-down UI
+- [ADDED] `Onhand.css` for styling (5 levels of nested collapses)
+- [ADDED] `CycleCount.tsx` placeholder page
+- [REFACTORED] `nlToSqlService.ts` (648 lines) into 8 smaller modules:
+  - config.ts, schemaContext.ts, validation.ts, mockQueries.ts
+  - llmClient.ts, queryExecutor.ts, errors.ts, typeMappers.ts
+- [FIXED] Multiple TypeScript build errors across codebase
+
+**Data Model (DCOnhandItem):**
+| Field | Description |
+|-------|-------------|
+| `inventory_item_id` | Inventory item ID |
+| `itemnumber` | Item number (segment1) |
+| `item_description` | Item description |
+| `subinventory_code` | Subinventory code |
+| `quantity` | Onhand quantity |
+| `locator` | Locator concatenated segments |
+| `aisle` | Aisle (segment1) |
+| `CustomSubinventory` | Locator CustomSubinventory |
+| `vendor` | Vendor code |
+| `product_group` | Product group code |
+| `productgrp` | Product group with description |
+| `vendor_display` | Vendor with description |
+| `style` | Style from VGS_TRIPLE_SEGMENT category |
+
+**Onhand Page Features:**
+- Search across all levels (subinventory, aisle, locator, item, vendor, style)
+- Stats cards showing DISTINCT counts (not cumulative)
+- Responsive layout with collapsible panels
+- DC-aware (uses selected DC from context)
+
+**Reason:** User requested Inventory section with Onhand drill-down view similar to Descartes page for warehouse inventory visibility.

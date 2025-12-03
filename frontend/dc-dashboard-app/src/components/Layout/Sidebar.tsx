@@ -12,6 +12,8 @@ import {
   EnvironmentOutlined,
   CloudOutlined,
   MessageOutlined,
+  DatabaseOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
 import { useOrderContext, useDCContext } from '../../contexts';
@@ -96,6 +98,19 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       label: !collapsed ? 'Descartes' : null,
       children: [
         createMenuItem('descartes', 'Descartes Planned', <CloudOutlined />, undefined, undefined, collapsed),
+      ],
+    },
+
+    // Divider
+    { type: 'divider' },
+
+    // Inventory Section
+    {
+      type: 'group',
+      label: !collapsed ? 'Inventory' : null,
+      children: [
+        createMenuItem('onhand', 'Onhand', <DatabaseOutlined />, undefined, undefined, collapsed),
+        createMenuItem('cycleCount', 'Cycle Counts', <SyncOutlined />, undefined, undefined, collapsed),
       ],
     },
 

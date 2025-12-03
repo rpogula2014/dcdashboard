@@ -107,6 +107,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -1)),
@@ -145,6 +148,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -1)),
@@ -183,6 +189,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -225,6 +234,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N', // NOT ROUTED - Exception
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -1)),
@@ -263,6 +275,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N', // NOT ROUTED - Exception
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -305,6 +320,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'Y', // ON HOLD - Critical Exception
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -4)),
@@ -343,6 +361,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'Y', // ON HOLD - Critical Exception
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -385,6 +406,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -4)),
@@ -423,6 +447,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -465,6 +492,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -1)),
@@ -503,6 +533,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -545,6 +578,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(addDays(today, -1)),
@@ -583,6 +619,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(today),
@@ -621,6 +660,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -663,6 +705,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(today),
@@ -701,6 +746,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -743,6 +791,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -785,6 +836,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -827,6 +881,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'N',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 
   // =============================
@@ -869,6 +926,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
   {
     ordered_date: formatDate(today),
@@ -907,6 +967,9 @@ export const mockOrders: DCOpenOrderLine[] = [
     hold_applied: 'N',
     hold_released: 'N',
     routed: 'Y',
+    localplusqtyexists: 'N',
+    localplusqty: null,
+    planned: 'N',
   },
 ];
 

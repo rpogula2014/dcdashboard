@@ -3,6 +3,9 @@
 *Generated from conversation on 2025-12-02*
 *Updated: 2025-12-02 - Backend API implemented, chart fixes, schema updates*
 *Updated: 2025-12-02 - Added prompt caching, token usage tracking, cost display, date formatting*
+*Updated: 2025-12-03 - Auto-refresh polling, compact UI, improved charts, timezone fix*
+*Updated: 2025-12-03 - Inventory section (Onhand/Cycle Counts), NL-to-SQL refactoring, build fixes*
+*Updated: 2025-12-03 - Added DC Onhand inventory table to DuckDB for Talk to Data queries*
 
 ## Objective
 
@@ -14,7 +17,7 @@ Build an AI-powered "Talk to Data" feature for the DC Dashboard that enables use
 
 - [HIGH] Natural language to SQL conversion via backend API (LLM calls on server) ✅
 - [HIGH] In-browser SQL execution using DuckDB-WASM for fast local queries ✅
-- [HIGH] Query two main datasets: DC Order Lines and Route Plans ✅
+- [HIGH] Query three main datasets: DC Order Lines, Route Plans, and DC Onhand Inventory ✅
 - [HIGH] Output results as text explanations, data tables, and charts ✅
 - [HIGH] Display generated SQL for transparency (users are data-comfortable) ✅
 - [HIGH] Dedicated "Talk to Data" page for comprehensive exploration ✅
@@ -162,6 +165,7 @@ OPENAI_API_KEY=your-key       # For GPT models
 - **Data Sources:**
   - `fetchOpenDCOrderLines` - DC order lines (bulk dataset)
   - `fetchRoutePlans` - Route plans (bulk dataset)
+  - `fetchDCOnhand` - DC onhand inventory (bulk dataset)
   - Supporting detail APIs (hold history, Descartes routing, network inventory, exceptions)
 - **Performance:** DuckDB queries are fast (<100ms) since data is local
 - **LLM Timeout:** 60 seconds for complex queries
@@ -256,6 +260,94 @@ DuckDB-WASM returns special types that need conversion:
 - Fixed timestamp display (were showing as large numbers)
 - Added `isTimestamp()` detection for Unix timestamps
 - Custom `formatDate()` function: `DD-MMM-YYYY` format (e.g., `01-DEC-2025`)
+
+## Recent Changes (2025-12-03)
+
+### Auto-Refresh Polling
+- Added 30-second auto-refresh interval for data freshness
+- Maximum duration: 30 minutes (stops automatically to save resources)
+- Visual countdown indicator in header showing time until next refresh
+- Toggle control to pause/resume auto-refresh
+- Spinning sync icon during active refresh
+- Fetches both Order Lines and Route Plans APIs in parallel
+- Duplicate call prevention using ref-based locking
+
+### APIs Called During Auto-Refresh
+| API | Endpoint | Description |
+|-----|----------|-------------|
+| Health Check | `GET /docs` | Checks API availability |
+| Order Lines | `GET /api/v1/dc-order-lines/open` | Fetches DC order data |
+| Route Plans | `GET /api/v1/descartes/route-plans` | Fetches Descartes route data |
+| DC Onhand | `GET /api/v1/inventory/dc-onhand` | Fetches DC onhand inventory |
+
+### DuckDB Timezone Fix
+- DuckDB-WASM defaults to UTC, causing `CURRENT_DATE` to return wrong day
+- Added `getUserTimezone()` to detect browser's local timezone
+- Set DuckDB timezone on connection: `SET TimeZone = '{timezone}'`
+- Now `CURRENT_DATE` returns correct local date
+
+### Compact UI
+- Reduced table cell padding (6px→3px) and font sizes (12px→10px)
+- Reduced chart heights (350px→220px for charts, 400px→250px for tables)
+- Smaller chat message bubbles, avatars, and input fields
+- Compact header and data freshness indicators
+- ~30-40% more content fits on screen
+
+### Improved Chart Visualizations
+**Bar Charts:**
+- Data labels on top of each bar showing values (e.g., "1.4K")
+- `minPointSize={3}` ensures small bars are visible even with skewed data
+- Rounded corners on bars for modern aesthetics
+- Lighter grid lines for less visual clutter
+
+**Pie Charts:**
+- Donut style (inner radius) for modern look
+- Values shown in labels (e.g., "ATD Route Truck: 1.4K")
+- Legend shows percentages (e.g., "ATD Route Truck (95.2%)")
+- Small slices (<2%) hidden to avoid label clutter
+
+### Date/Timestamp Display Fix
+- Added `isDateColumn()` to detect date columns by name
+- Added `isTimestamp()` to detect Unix timestamps (2000-2100 range)
+- `formatValue()` function formats dates as human-readable strings
+- Fixed Quick Stats showing timestamps as large numbers
+- Now displays: "Wednesday, December 3, 2025" instead of "1,764,806,400,000"
+
+### API Call Optimization
+- Fixed duplicate API calls in ExceptionsCard (open-trips called 3x → 1x)
+- Added `isLoadingRef` to prevent concurrent duplicate fetches
+- Used refs instead of state in useCallback dependencies
+- Removed problematic dependencies from useEffect arrays
+
+### DC Onhand Inventory Integration
+- Added `dc_onhand` table to DuckDB for inventory queries
+- New data source: `fetchDCOnhand` API loads into DuckDB on page init
+- Schema context updated with dc_onhand column descriptions
+- DataFreshness component shows Onhand status alongside Orders and Routes
+
+**dc_onhand Table Schema:**
+| Column | Type | Description |
+|--------|------|-------------|
+| inventory_item_id | INTEGER | Unique item identifier |
+| itemnumber | VARCHAR | Item number/SKU code |
+| item_description | VARCHAR | Description of the item |
+| subinventory_code | VARCHAR | Subinventory (STOCK, QUICKPICK, STAGE, etc.) |
+| quantity | INTEGER | Quantity on hand at this location |
+| locator | VARCHAR | Storage locator code |
+| aisle | VARCHAR | Aisle identifier within warehouse |
+| CustomSubinventory | VARCHAR | Custom subinventory classification |
+| vendor | VARCHAR | Vendor/supplier name |
+| vendor_display | VARCHAR | Vendor display name |
+| product_group | VARCHAR | Product group code |
+| productgrp | VARCHAR | Product group description |
+| style | VARCHAR | Product style identifier |
+
+**Example Queries Now Supported:**
+- "What items are in STOCK subinventory?"
+- "How much total quantity is in aisle A1?"
+- "Show me items by vendor"
+- "What product groups have the most inventory?"
+- "List items in locator A1-01-01"
 
 ---
 *This PRD was generated by Clavix from conversational requirements gathering.*

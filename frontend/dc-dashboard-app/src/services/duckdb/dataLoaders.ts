@@ -4,12 +4,14 @@
  */
 
 import type { DCOpenOrderLine, RoutePlanRaw } from '../../types';
+import type { DCOnhandItem } from '../api';
 import { insertData, executeQuery, getConnection, tableExists } from './duckdbService';
 
 // Table names
 export const TABLE_NAMES = {
   DC_ORDER_LINES: 'dc_order_lines',
   ROUTE_PLANS: 'route_plans',
+  DC_ONHAND: 'dc_onhand',
 } as const;
 
 // Track data loading state
@@ -24,11 +26,17 @@ interface DataLoadState {
     count: number;
     lastLoaded: Date | null;
   };
+  dcOnhand: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
 }
 
 let loadState: DataLoadState = {
   dcOrderLines: { loaded: false, count: 0, lastLoaded: null },
   routePlans: { loaded: false, count: 0, lastLoaded: null },
+  dcOnhand: { loaded: false, count: 0, lastLoaded: null },
 };
 
 /**
@@ -106,6 +114,29 @@ export async function loadRoutePlans(data: RoutePlanRaw[]): Promise<void> {
 }
 
 /**
+ * Load DC Onhand Inventory into DuckDB
+ */
+export async function loadDCOnhand(data: DCOnhandItem[]): Promise<void> {
+  if (data.length === 0) {
+    console.warn('[DataLoader] No DC Onhand data to load');
+    return;
+  }
+
+  // Transform data to satisfy Record<string, unknown> type
+  const transformedData = data.map((item) => ({ ...item }));
+
+  await insertData(TABLE_NAMES.DC_ONHAND, transformedData, true);
+
+  loadState.dcOnhand = {
+    loaded: true,
+    count: data.length,
+    lastLoaded: new Date(),
+  };
+
+  console.log(`[DataLoader] Loaded ${data.length} DC Onhand items`);
+}
+
+/**
  * Load both datasets into DuckDB
  */
 export async function loadAllData(
@@ -129,7 +160,7 @@ export function getDataLoadState(): DataLoadState {
  * Check if data is loaded and ready for querying
  */
 export function isDataReady(): boolean {
-  return loadState.dcOrderLines.loaded || loadState.routePlans.loaded;
+  return loadState.dcOrderLines.loaded || loadState.routePlans.loaded || loadState.dcOnhand.loaded;
 }
 
 /**
@@ -138,6 +169,7 @@ export function isDataReady(): boolean {
 export async function getDataSummary(): Promise<{
   dcOrderLines: { count: number; lastLoaded: Date | null };
   routePlans: { count: number; lastLoaded: Date | null };
+  dcOnhand: { count: number; lastLoaded: Date | null };
   tables: string[];
 }> {
   const tables = [];
@@ -148,6 +180,9 @@ export async function getDataSummary(): Promise<{
     }
     if (await tableExists(TABLE_NAMES.ROUTE_PLANS)) {
       tables.push(TABLE_NAMES.ROUTE_PLANS);
+    }
+    if (await tableExists(TABLE_NAMES.DC_ONHAND)) {
+      tables.push(TABLE_NAMES.DC_ONHAND);
     }
   } catch (e) {
     console.warn('[DataLoader] Could not check tables:', e);
@@ -161,6 +196,10 @@ export async function getDataSummary(): Promise<{
     routePlans: {
       count: loadState.routePlans.count,
       lastLoaded: loadState.routePlans.lastLoaded,
+    },
+    dcOnhand: {
+      count: loadState.dcOnhand.count,
+      lastLoaded: loadState.dcOnhand.lastLoaded,
     },
     tables,
   };
@@ -213,6 +252,22 @@ export async function createIndexes(): Promise<void> {
         ON ${TABLE_NAMES.ROUTE_PLANS}(trip_id)
       `);
       console.log('[DataLoader] Created indexes on route_plans');
+    }
+
+    if (await tableExists(TABLE_NAMES.DC_ONHAND)) {
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_onhand_item
+        ON ${TABLE_NAMES.DC_ONHAND}(inventory_item_id)
+      `);
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_onhand_subinv
+        ON ${TABLE_NAMES.DC_ONHAND}(subinventory_code)
+      `);
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_onhand_locator
+        ON ${TABLE_NAMES.DC_ONHAND}(locator)
+      `);
+      console.log('[DataLoader] Created indexes on dc_onhand');
     }
   } catch (error) {
     console.warn('[DataLoader] Index creation failed (may already exist):', error);
@@ -282,5 +337,21 @@ Contains Descartes route plan data:
 - ordered_item: Item on the route
 - quantity: Quantity to deliver
 - is_back_order: 1 if back order, 0 otherwise
+
+### dc_onhand
+Contains DC onhand inventory data:
+- inventory_item_id: Unique item identifier
+- itemnumber: Item number/SKU
+- item_description: Description of the item
+- subinventory_code: Subinventory code (e.g., STOCK, QUICKPICK, STAGE)
+- quantity: Quantity on hand
+- locator: Storage locator code
+- aisle: Aisle identifier
+- CustomSubinventory: Custom subinventory classification
+- vendor: Vendor name
+- vendor_display: Vendor name (Combination of code and value ex. 093-ABC)
+- product_group: Product group code (Combination of code and value ex. 01-DCV)
+- productgrp_display: Product group description
+- style: Product style
 `;
 }

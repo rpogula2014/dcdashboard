@@ -5,3 +5,5 @@ export { default as ISOs } from './ISOs';
 export { default as Analytics } from './Analytics';
 export { default as Descartes } from './Descartes';
 export { default as TalkToData } from './TalkToData';
+export { default as Onhand } from './Onhand';
+export { default as CycleCount } from './CycleCount';

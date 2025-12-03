@@ -285,6 +285,11 @@ export interface DataFreshness {
     count: number;
     lastLoaded: Date | null;
   };
+  dcOnhand: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
 }
 
 // Chat session state

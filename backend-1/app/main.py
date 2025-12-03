@@ -7,7 +7,7 @@ from loguru import logger
 
 from app.config.settings import get_settings
 from app.exceptions.handlers import register_exception_handlers
-from app.routers import dc_locations, dc_order_lines, descartes_info, health, network_inventory, order_hold_history, trip_exceptions
+from app.routers import dc_locations, dc_onhand, dc_order_lines, descartes_info, health, network_inventory, order_hold_history, trip_exceptions
 
 
 # Configure loguru logging
@@ -71,6 +71,7 @@ register_exception_handlers(app)
 # Include routers
 app.include_router(health.router)
 app.include_router(dc_locations.router, prefix="/api/v1")
+app.include_router(dc_onhand.router, prefix="/api/v1")
 app.include_router(dc_order_lines.router, prefix="/api/v1")
 app.include_router(descartes_info.router, prefix="/api/v1")
 app.include_router(network_inventory.router, prefix="/api/v1")

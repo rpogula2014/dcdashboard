@@ -109,16 +109,28 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
   // Refs for interval management
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
+  const isLoadingRef = useRef(false); // Prevent duplicate calls
+  const selectedDCRef = useRef(selectedDC);
+
+  // Keep ref updated
+  selectedDCRef.current = selectedDC;
 
   // Fetch traction exceptions
   const loadTractionExceptions = useCallback(async (isInitial = false) => {
     if (!isMountedRef.current) return;
 
+    // Prevent duplicate concurrent calls
+    if (isLoadingRef.current && !isInitial) {
+      console.log('[ExceptionsCard] Skipping duplicate fetch');
+      return;
+    }
+
+    isLoadingRef.current = true;
     try {
       if (isInitial) {
         setTractionLoading(true);
       }
-      const data = await fetchTractionExceptions(selectedDC);
+      const data = await fetchTractionExceptions(selectedDCRef.current);
       if (isMountedRef.current) {
         setTractionExceptions(data);
       }
@@ -128,11 +140,12 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
         setTractionExceptions([]);
       }
     } finally {
+      isLoadingRef.current = false;
       if (isMountedRef.current && isInitial) {
         setTractionLoading(false);
       }
     }
-  }, [selectedDC]);
+  }, []); // No dependencies - uses ref for selectedDC
 
   // Initial fetch and DC change handling
   useEffect(() => {
@@ -142,7 +155,7 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
     return () => {
       isMountedRef.current = false;
     };
-  }, [loadTractionExceptions]);
+  }, [selectedDC]); // Only re-fetch when DC changes
 
   // Auto-refresh management
   useEffect(() => {
@@ -172,7 +185,7 @@ export function ExceptionsCard({ orders }: ExceptionsCardProps) {
     if (refreshTrigger > 0) {
       loadTractionExceptions(false);
     }
-  }, [refreshTrigger, loadTractionExceptions]);
+  }, [refreshTrigger]);
 
   // Calculate ship set exceptions
   const shipSetExceptions = useMemo(() => calculateShipSetExceptions(orders), [orders]);

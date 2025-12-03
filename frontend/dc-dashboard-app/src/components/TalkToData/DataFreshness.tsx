@@ -105,11 +105,11 @@ export function DataFreshness({
   onRefresh,
   isRefreshing = false,
 }: DataFreshnessProps) {
-  const { dcOrderLines, routePlans } = freshness;
+  const { dcOrderLines, routePlans, dcOnhand } = freshness;
 
   // Determine overall status
-  const isLoaded = dcOrderLines.loaded || routePlans.loaded;
-  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded]
+  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded;
+  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded]
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0];
 
@@ -150,6 +150,12 @@ export function DataFreshness({
           count={routePlans.count}
           lastLoaded={routePlans.lastLoaded}
         />
+        <DatasetStatus
+          name="Onhand"
+          loaded={dcOnhand.loaded}
+          count={dcOnhand.count}
+          lastLoaded={dcOnhand.lastLoaded}
+        />
       </Space>
     </div>
   );
@@ -163,9 +169,9 @@ export function DataFreshnessCompact({
 }: {
   freshness: DataFreshnessType;
 }) {
-  const { dcOrderLines, routePlans } = freshness;
-  const isLoaded = dcOrderLines.loaded || routePlans.loaded;
-  const totalCount = dcOrderLines.count + routePlans.count;
+  const { dcOrderLines, routePlans, dcOnhand } = freshness;
+  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded;
+  const totalCount = dcOrderLines.count + routePlans.count + dcOnhand.count;
 
   if (!isLoaded) {
     return (
@@ -177,7 +183,7 @@ export function DataFreshnessCompact({
     );
   }
 
-  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded]
+  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded]
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0];
 
@@ -189,6 +195,7 @@ export function DataFreshnessCompact({
         <div>
           <div>Orders: {dcOrderLines.count.toLocaleString()} rows</div>
           <div>Routes: {routePlans.count.toLocaleString()} rows</div>
+          <div>Onhand: {dcOnhand.count.toLocaleString()} rows</div>
           <div>Updated: {formatRelativeTime(lastUpdated)}</div>
         </div>
       }

@@ -1,9 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
 import { Sidebar, Header } from './components/Layout';
-import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes, TalkToData } from './pages';
+import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes, TalkToData, Onhand, CycleCount } from './pages';
 import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext } from './contexts';
-import type { PageKey, RefreshInterval } from './types';
+import type { PageKey } from './types';
 import './App.css';
 
 const { Content } = Layout;
@@ -81,6 +81,10 @@ function AppContent() {
         return <Descartes />;
       case 'talkToData':
         return <TalkToData />;
+      case 'onhand':
+        return <Onhand />;
+      case 'cycleCount':
+        return <CycleCount />;
       default:
         return <Summary />;
     }

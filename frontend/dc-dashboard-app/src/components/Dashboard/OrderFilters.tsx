@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useMemo } from 'react';
 import { FilterOutlined, ClearOutlined } from '@ant-design/icons';
-import { Input, Select, DatePicker, Checkbox, Button, Space, Collapse } from 'antd';
+import { Input, Select, DatePicker, Checkbox, Button, Collapse } from 'antd';
 import type { Dayjs } from 'dayjs';
 import type { OrderRow } from '../../types';
 
@@ -399,7 +399,7 @@ export function OrderFiltersPanel({
                     <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '2px' }}>Quick Presets</label>
                     <Select
                       placeholder="Select preset..."
-                      onChange={(value) => onApplyPreset(value)}
+                      onChange={(value) => value && onApplyPreset(value)}
                       options={filterPresets.map(p => ({
                         value: p.key,
                         label: p.label,

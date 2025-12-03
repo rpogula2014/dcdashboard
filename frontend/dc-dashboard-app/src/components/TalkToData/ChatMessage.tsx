@@ -5,7 +5,7 @@
 
 import { Typography, Avatar, Collapse } from 'antd';
 import { UserOutlined, RobotOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import type { ChatMessage as ChatMessageType, ChartType, TokenUsage } from '../../types';
+import type { ChatMessage as ChatMessageType, TokenUsage } from '../../types';
 import { ResultTable } from './ResultTable';
 import { ResultChart } from './ResultChart';
 import { ResultText } from './ResultText';

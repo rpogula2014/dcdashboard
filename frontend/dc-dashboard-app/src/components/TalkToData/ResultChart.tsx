@@ -239,14 +239,16 @@ function formatColumnName(name: string): string {
 /**
  * Custom label for bar chart - shows value on top of each bar
  */
-function renderBarLabel(props: {
-  x?: number;
-  y?: number;
-  width?: number;
-  value?: number;
-}) {
-  const { x = 0, y = 0, width = 0, value = 0 } = props;
-  if (value === 0) return null;
+function renderBarLabel(props: Record<string, unknown>) {
+  const xProp = props.x ?? 0;
+  const yProp = props.y ?? 0;
+  const widthProp = props.width ?? 0;
+  const valueProp = props.value ?? 0;
+  const x = typeof xProp === 'string' ? parseFloat(xProp) : Number(xProp);
+  const y = typeof yProp === 'string' ? parseFloat(yProp) : Number(yProp);
+  const width = typeof widthProp === 'string' ? parseFloat(widthProp) : Number(widthProp);
+  const value = typeof valueProp === 'string' ? parseFloat(valueProp) : Number(valueProp);
+  if (value === 0 || isNaN(value)) return null;
 
   return (
     <text
@@ -325,7 +327,7 @@ function renderBarChart(
             dataKey={col}
             name={formatColumnName(col)}
             fill={CHART_COLORS[index % CHART_COLORS.length]}
-            label={renderBarLabel}
+            label={renderBarLabel as never}
             minPointSize={3}
             radius={[2, 2, 0, 0]}
           />
@@ -407,7 +409,7 @@ function renderPieChart(
           outerRadius={Math.min(height / 2 - 30, 80)}
           innerRadius={Math.min(height / 2 - 30, 80) * 0.4}
           label={({ name, value, percent }) => {
-            if (percent < 0.02) return null; // Skip very small slices
+            if (!percent || percent < 0.02) return null; // Skip very small slices
             return `${truncateLabel(String(name), 10)}: ${formatAxisValue(value as number)}`;
           }}
           labelLine={{ stroke: '#999', strokeWidth: 1 }}
@@ -420,7 +422,7 @@ function renderPieChart(
         <Tooltip content={<CustomTooltip />} />
         <Legend
           wrapperStyle={{ fontSize: 10 }}
-          formatter={(value, entry) => {
+          formatter={(value) => {
             const item = data.find(d => d[labelColumn] === value);
             const itemValue = item ? item[valueColumn] : 0;
             const pct = total > 0 ? ((itemValue as number) / total * 100).toFixed(1) : 0;
