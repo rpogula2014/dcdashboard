@@ -5,7 +5,6 @@ node_modules
 logs
 __pycache__
 baml_client
-baml_src
 .env
 *.pem
 *.crt
