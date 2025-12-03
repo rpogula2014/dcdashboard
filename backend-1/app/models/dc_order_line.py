@@ -16,9 +16,7 @@ class DCOpenOrderLine(BaseModel):
     ordered_date: Optional[datetime] = Field(None, description="Date the order was placed")
     line_category_code: Optional[str] = Field(None, description="Line category code")
     ordered_item: Optional[str] = Field(None, description="Ordered item number/SKU")
-    order_category: Optional[str] = Field(
-        None, description="Order category: INTERNAL ORDER or CUSTOMER ORDER"
-    )
+    order_category: Optional[str] = Field( None, description="Order category: INTERNAL ORDER or CUSTOMER ORDER" )
     inventory_item_id: Optional[int] = Field(None, description="Inventory item ID")
     orig_sys_document_ref: Optional[str] = Field(None, description="Original system document reference")
     order_number: Optional[int] = Field(None, description="Order number")
@@ -26,10 +24,10 @@ class DCOpenOrderLine(BaseModel):
     shipping_instructions: Optional[str] = Field(None, description="Shipping instructions")
     line: Optional[str] = Field(None, description="Line number.shipment number")
     schedule_ship_date: Optional[datetime] = Field(None, description="Scheduled ship date")
-    ordered_quantity: Optional[float] = Field(None, description="Ordered quantity")
-    reserved_qty: Optional[float] = Field(None, description="Reserved quantity")
+    ordered_quantity: Optional[int] = Field(None, description="Ordered quantity")
+    reserved_qty: Optional[int] = Field(None, description="Reserved quantity")
     shipping_method_code: Optional[str] = Field(None, description="Shipping method code")
-    iso: Optional[str] = Field(None, description="ISO reference (attribute8)")
+    iso: Optional[str] = Field(None, description="Internal sales order reference (attribute8)")
     fulfillment_type: Optional[str] = Field(None, description="Fulfillment type (attribute17)")
     order_type: Optional[str] = Field(None, description="Order type (line type without 'Line')")
     price_list: Optional[str] = Field(None, description="Price list name")
@@ -42,22 +40,20 @@ class DCOpenOrderLine(BaseModel):
     header_id: Optional[int] = Field(None, description="Order header ID")
     ship_to_addressee: Optional[str] = Field(None, description="Ship to addressee")
     delivery_id: Optional[int] = Field(None, description="Delivery ID")
-    original_line_status: Optional[str] = Field(
-        None, description="Original line status (Ready to Release, Backordered, etc.)"
-    )
+    original_line_status: Optional[str] = Field( None, description="line status (Ready to Release, Backordered, Release to Warehouse, Staged/Pick Confirmed, Shipped)" )
 
     # Status flags
     hold_applied: Optional[str] = Field(None, description="Y/N flag if hold was applied")
     hold_released: Optional[str] = Field(None, description="Y/N flag if hold was released")
-    routed: Optional[str] = Field(None, description="Y/N flag if order is routed")
+    routed: Optional[str] = Field(None, description="Y/N flag if order is routed (Sent to descartes routing system from oracle)")
     productgrp: Optional[str] = Field(None, description="item Product group")
     vendor: Optional[str] = Field(None, description="item Vendor")
     style: Optional[str] = Field(None, description="item Style")
     item_description: Optional[str] = Field(None, description="item Description")
     trip_id: Optional[int] = Field(None, description="Trip ID")
-    localplusqtyexists: Optional[str] = Field(None, description="Y/N flag if localplusqtyexists")
+    localplusqtyexists: Optional[str] = Field(None, description="Y/N flag if local+ quantity exists")
     localplusqty: Optional[float] = Field(None, description="Local+ quantity")
-    planned: Optional[str] = Field(None, description="Y/N flag if order is planned")
+    planned: Optional[str] = Field(None, description="Y/N flag if order is planned (Sent to oracle from  descartes routing system)")
     
 
     class Config:

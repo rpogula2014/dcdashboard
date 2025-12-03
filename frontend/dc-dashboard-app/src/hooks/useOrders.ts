@@ -201,6 +201,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
   // Refs for interval management
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
+  const isFetchingRef = useRef(false); // Prevent duplicate concurrent fetches
 
   // Derived data
   const orderRows = transformOrders(orders);
@@ -214,6 +215,13 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
    */
   const fetchOrders = useCallback(async (isRefresh = false) => {
     if (!isMountedRef.current) return;
+
+    // Prevent duplicate concurrent fetches
+    if (isFetchingRef.current) {
+      console.log('[useOrders] Skipping duplicate fetch request');
+      return;
+    }
+    isFetchingRef.current = true;
 
     if (isRefresh) {
       setIsRefreshing(true);
@@ -266,6 +274,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
         setError(apiError);
       }
     } finally {
+      isFetchingRef.current = false;
       if (isMountedRef.current) {
         setIsLoading(false);
         setIsRefreshing(false);

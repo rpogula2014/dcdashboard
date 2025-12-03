@@ -11,6 +11,7 @@ import {
   BarChartOutlined,
   EnvironmentOutlined,
   CloudOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
 import { useOrderContext, useDCContext } from '../../contexts';
@@ -103,6 +104,18 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
     // Analytics Section
     createMenuItem('analytics', 'Analytics', <BarChartOutlined />, undefined, undefined, collapsed),
+
+    // Divider
+    { type: 'divider' },
+
+    // AI Section
+    {
+      type: 'group',
+      label: !collapsed ? 'AI Tools' : null,
+      children: [
+        createMenuItem('talkToData', 'Talk to Data', <MessageOutlined />, undefined, '#722ed1', collapsed),
+      ],
+    },
   ], [badgeCounts, collapsed]);
 
   return (

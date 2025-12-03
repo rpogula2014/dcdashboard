@@ -62,7 +62,8 @@ export type PageKey =
   | 'cycleCount'
   | 'traction'
   | 'analytics'
-  | 'descartes';
+  | 'descartes'
+  | 'talkToData';
 
 // KPI Card data structure
 export interface KPIData {
@@ -201,4 +202,128 @@ export interface Route {
   trip_id: number | null;
   route_start_date: string | null;
   stops: RouteStop[];
+}
+
+// ==========================================
+// Talk to Data - Chat & Query Types
+// ==========================================
+
+// Chat message roles
+export type ChatRole = 'user' | 'assistant' | 'system';
+
+// Result display type determined by query output
+export type ResultDisplayType = 'table' | 'chart' | 'text' | 'error';
+
+// Chart types for visualization
+export type ChartType = 'bar' | 'line' | 'pie' | 'area';
+
+// Query execution status
+export type QueryStatus = 'idle' | 'pending' | 'success' | 'error';
+
+// DuckDB query result row (generic)
+export type QueryResultRow = Record<string, unknown>;
+
+// Query result with metadata
+export interface QueryResult {
+  rows: QueryResultRow[];
+  columns: string[];
+  rowCount: number;
+  executionTime: number; // milliseconds
+  sql: string;
+}
+
+// Token usage information from LLM
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens: number;
+  cache_read_input_tokens: number;
+}
+
+// Chat message structure
+export interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  content: string;
+  timestamp: Date;
+  // For assistant messages with query results
+  queryResult?: QueryResult;
+  displayType?: ResultDisplayType;
+  chartType?: ChartType;
+  sql?: string;
+  error?: string;
+  // For contextual queries
+  context?: QueryContext;
+  // Token usage from LLM
+  usage?: TokenUsage;
+}
+
+// Context for contextual queries (right-click, selection)
+export interface QueryContext {
+  type: 'single-row' | 'multi-row' | 'filtered-view';
+  selectedRows?: QueryResultRow[];
+  filters?: OrderFilters;
+  tableName?: string;
+}
+
+// Example question for suggestions
+export interface ExampleQuestion {
+  text: string;
+  category: 'orders' | 'routes' | 'analysis' | 'status';
+  description?: string;
+}
+
+// Data freshness indicator
+export interface DataFreshness {
+  dcOrderLines: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
+  routePlans: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
+}
+
+// Chat session state
+export interface ChatSession {
+  messages: ChatMessage[];
+  isLoading: boolean;
+  error: string | null;
+  dataFreshness: DataFreshness;
+}
+
+// NL to SQL conversion result from LLM
+export interface NLToSQLResult {
+  sql: string;
+  confidence: number; // 0-1
+  explanation?: string;
+  suggestedDisplayType?: ResultDisplayType;
+  suggestedChartType?: ChartType;
+  usage?: TokenUsage;
+}
+
+// Query classification for smart routing
+export type QueryClassification =
+  | 'local-data'    // Can be answered with DuckDB
+  | 'needs-api'     // Needs fresh API data
+  | 'hybrid';       // Needs both local query + API enrichment
+
+// Smart routing decision
+export interface QueryRoutingDecision {
+  classification: QueryClassification;
+  primaryTable?: 'dc_order_lines' | 'route_plans';
+  apiEndpoints?: string[];
+  reason?: string;
+}
+
+// Error with user-friendly message
+export interface QueryError {
+  type: 'sql-syntax' | 'execution' | 'no-results' | 'timeout' | 'unknown';
+  message: string;
+  userMessage: string;
+  sql?: string;
+  suggestions?: string[];
 }

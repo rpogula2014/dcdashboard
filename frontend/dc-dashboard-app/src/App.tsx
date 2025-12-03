@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
 import { Sidebar, Header } from './components/Layout';
-import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes } from './pages';
+import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes, TalkToData } from './pages';
 import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext } from './contexts';
 import type { PageKey, RefreshInterval } from './types';
 import './App.css';
@@ -32,6 +32,7 @@ const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
   traction: { title: 'Traction', subtitle: 'Analytics' },
   analytics: { title: 'Analytics', subtitle: 'Reports & Insights' },
   descartes: { title: 'Descartes Planned', subtitle: 'Route Plans' },
+  talkToData: { title: 'Talk to Data', subtitle: 'AI-Powered Queries' },
 };
 
 /**
@@ -78,6 +79,8 @@ function AppContent() {
         return <Analytics />;
       case 'descartes':
         return <Descartes />;
+      case 'talkToData':
+        return <TalkToData />;
       default:
         return <Summary />;
     }

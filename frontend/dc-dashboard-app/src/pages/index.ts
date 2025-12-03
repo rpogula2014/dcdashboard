@@ -4,3 +4,4 @@ export { default as OtherShipMethods } from './OtherShipMethods';
 export { default as ISOs } from './ISOs';
 export { default as Analytics } from './Analytics';
 export { default as Descartes } from './Descartes';
+export { default as TalkToData } from './TalkToData';
