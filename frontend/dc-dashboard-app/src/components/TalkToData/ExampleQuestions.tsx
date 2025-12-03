@@ -30,7 +30,12 @@ const EXAMPLE_QUESTIONS: ExampleQuestion[] = [
     description: 'Count orders with hold applied',
   },
   {
-    text: 'Show me orders over 100 units',
+    text: 'Show orders scheduled to ship today',
+    category: 'orders',
+    description: "Today's shipments",
+  },
+  {
+    text: 'Show me orders over 10 units',
     category: 'orders',
     description: 'Large quantity orders',
   },
@@ -39,15 +44,10 @@ const EXAMPLE_QUESTIONS: ExampleQuestion[] = [
     category: 'orders',
     description: 'Customer analysis',
   },
-  {
-    text: 'Show orders scheduled to ship today',
-    category: 'orders',
-    description: "Today's shipments",
-  },
 
   // Routes category
   {
-    text: 'How many routes are planned for today?',
+    text: 'How many distinct routes are planned for today?',
     category: 'routes',
     description: 'Route count',
   },

@@ -157,14 +157,14 @@ function ConvertNLToSQL(user_query: string, schema_context: string, context_info
     - Count orders: SELECT COUNT(*) FROM dc_order_lines
     - Orders by status: SELECT hold_applied, COUNT(*) FROM dc_order_lines GROUP BY hold_applied
     - Orders for customer: SELECT * FROM dc_order_lines WHERE sold_to LIKE '%CustomerName%'
-    - Orders today: SELECT * FROM dc_order_lines WHERE CAST(ordered_date AS DATE) = CURRENT_DATE
     - Shipping today: SELECT ship_to, COUNT(*) as count FROM dc_order_lines WHERE CAST(schedule_ship_date AS DATE) = CURRENT_DATE GROUP BY ship_to ORDER BY count DESC
     - Shipping tomorrow: SELECT shipping_method_code, COUNT(*) as count FROM dc_order_lines WHERE CAST(schedule_ship_date AS DATE) = CURRENT_DATE + INTERVAL 1 DAY GROUP BY shipping_method_code ORDER BY count DESC
     - Late orders: SELECT * FROM dc_order_lines WHERE CAST(schedule_ship_date AS DATE) < CURRENT_DATE
 
     ### Route Plans Queries
-    - Route information: SELECT * FROM route_plans WHERE route_name = 'RouteName'
-    - Routes today: SELECT * FROM route_plans WHERE CAST(route_start_date AS DATE) = CURRENT_DATE
+    - Route information: SELECT * FROM route_plans WHERE route_name = 'RouteName' limit 1
+    - Routes today: SELECT route_name FROM route_plans WHERE CAST(route_start_date AS DATE) = CURRENT_DATE group by route_name
+    - Routes by Stops: SELECT route_name, COUNT(distinct stop_number) as stop_count FROM route_plans WHERE CAST(route_start_date AS DATE) = CURRENT_DATE group by route_name
 
     ### Inventory (dc_onhand) Queries
     **IMPORTANT**: For vendor queries, ALWAYS use vendor_display (user-friendly name like "Hercules") instead of vendor (internal code).

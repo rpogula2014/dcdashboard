@@ -28,7 +28,7 @@ const itemColumns: ColumnsType<OnhandItem> = [
     title: 'Description',
     dataIndex: 'item_description',
     key: 'item_description',
-    width: 15/0,
+    width: 150,
     ellipsis: true,
     render: (val) => <span style={{ fontSize: '11px' }}>{val || '-'}</span>,
   },

@@ -101,20 +101,26 @@ function StopContent({ stop }: { stop: RouteStop }) {
 
 // Component for rendering stops within a route
 function RouteStops({ stops }: { stops: RouteStop[] }) {
-  const items = stops.map((stop, idx) => ({
-    key: `stop-${stop.stop_number}-${idx}`,
-    label: (
-      <div className="stop-header">
-        <EnvironmentOutlined className="stop-icon" />
-        <span className="stop-number">Stop {stop.stop_number ?? idx + 1}</span>
-        <span className="stop-name">{stop.location_name || 'Unknown Location'}</span>
-        <Tag color="blue" className="stop-badge">
-          {stop.orderLines.length} line{stop.orderLines.length !== 1 ? 's' : ''}
-        </Tag>
-      </div>
-    ),
-    children: <StopContent stop={stop} />,
-  }));
+  const items = stops.map((stop, idx) => {
+    const totalUnits = stop.orderLines.reduce((sum, ol) => sum + (ol.quantity ?? 0), 0);
+    return {
+      key: `stop-${stop.stop_number}-${idx}`,
+      label: (
+        <div className="stop-header">
+          <EnvironmentOutlined className="stop-icon" />
+          <span className="stop-number">Stop {stop.stop_number ?? idx + 1}</span>
+          <span className="stop-name">{stop.location_name || 'Unknown Location'}</span>
+          <Tag color="blue" className="stop-badge">
+            {stop.orderLines.length} line{stop.orderLines.length !== 1 ? 's' : ''}
+          </Tag>
+          <Tag color="cyan" className="stop-badge">
+            {totalUnits.toLocaleString()} units
+          </Tag>
+        </div>
+      ),
+      children: <StopContent stop={stop} />,
+    };
+  });
 
   return (
     <Collapse
@@ -232,6 +238,11 @@ export function Descartes() {
             )}
           </div>
           <div className="route-badges">
+            {route.process_code && (
+              <Tag color={route.process_code === 'SHIPCONFIRM' ? 'green' : 'orange'}>
+                {route.process_code}
+              </Tag>
+            )}
             <Tag color="purple">{route.stops.length} stops</Tag>
             <Tag color="blue">{totalLines} lines</Tag>
             <Tag color="cyan">{totalQty.toLocaleString()} units</Tag>
