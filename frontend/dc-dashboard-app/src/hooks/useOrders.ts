@@ -2,16 +2,19 @@
  * useOrders Hook
  * Manages order data fetching from API with fallback to mock data
  * Includes loading states, error handling, and auto-refresh support
+ * Also loads data into DuckDB for SQL queries and alerts
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DCOpenOrderLine, OrderRow, KPIData, RefreshInterval } from '../types';
-import { fetchOpenDCOrderLines, checkApiHealth, type ApiError } from '../services/api';
+import { fetchOpenDCOrderLines, fetchRoutePlans, fetchDCOnhand, checkApiHealth, type ApiError } from '../services/api';
 import {
   mockOrders,
   transformToOrderRow,
   SHIP_METHODS,
 } from '../mock/data';
+import { initializeDuckDB } from '../services/duckdb/duckdbService';
+import { loadDCOrderLines, loadRoutePlans, loadDCOnhand } from '../services/duckdb/dataLoaders';
 
 // =============================
 // TYPES
@@ -178,6 +181,67 @@ function calculateKPIData(orders: OrderRow[]): KPIData[] {
 }
 
 // =============================
+// DUCKDB INTEGRATION
+// =============================
+
+/**
+ * Load order data into DuckDB for SQL queries and alerts
+ * Runs asynchronously without blocking the UI
+ */
+async function loadToDuckDB(data: DCOpenOrderLine[], dcId?: number): Promise<void> {
+  if (!data || data.length === 0) {
+    console.log('[useOrders] No data to load into DuckDB');
+    return;
+  }
+
+  try {
+    // Initialize DuckDB (singleton, returns immediately if already initialized)
+    await initializeDuckDB();
+
+    // Load order lines into DuckDB table
+    await loadDCOrderLines(data);
+    console.log(`[useOrders] Loaded ${data.length} orders into DuckDB`);
+
+    // Load route_plans and dc_onhand asynchronously (fire and forget)
+    loadRoutePlansToDuckDB(dcId);
+    loadDCOnhandToDuckDB(dcId);
+  } catch (error) {
+    // Log but don't throw - DuckDB loading is not critical for basic app functionality
+    console.warn('[useOrders] Failed to load data into DuckDB:', error);
+  }
+}
+
+/**
+ * Fetch and load route plans into DuckDB (async, non-blocking)
+ */
+async function loadRoutePlansToDuckDB(dcId?: number): Promise<void> {
+  try {
+    const routePlans = await fetchRoutePlans(dcId);
+    if (routePlans && routePlans.length > 0) {
+      await loadRoutePlans(routePlans);
+      console.log(`[useOrders] Loaded ${routePlans.length} route plans into DuckDB`);
+    }
+  } catch (error) {
+    console.warn('[useOrders] Failed to load route plans into DuckDB:', error);
+  }
+}
+
+/**
+ * Fetch and load DC onhand inventory into DuckDB (async, non-blocking)
+ */
+async function loadDCOnhandToDuckDB(dcId?: number): Promise<void> {
+  try {
+    const onhandData = await fetchDCOnhand(dcId);
+    if (onhandData && onhandData.length > 0) {
+      await loadDCOnhand(onhandData);
+      console.log(`[useOrders] Loaded ${onhandData.length} onhand records into DuckDB`);
+    }
+  } catch (error) {
+    console.warn('[useOrders] Failed to load onhand data into DuckDB:', error);
+  }
+}
+
+// =============================
 // HOOK
 // =============================
 
@@ -242,6 +306,9 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
           setOrders(data);
           setIsUsingMockData(false);
           setLastSynced(new Date());
+
+          // Load data into DuckDB for SQL queries and alerts
+          loadToDuckDB(data, dc);
         }
       } else if (useMockDataFallback) {
         // Fall back to mock data
@@ -250,6 +317,7 @@ export function useOrders(options: UseOrdersOptions = {}): UseOrdersResult {
           setOrders(mockOrders);
           setIsUsingMockData(true);
           setLastSynced(new Date());
+          // Note: Not loading mock data to DuckDB - alerts require real data
         }
       } else {
         throw {

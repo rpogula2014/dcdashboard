@@ -7,8 +7,10 @@ FastAPI server that exposes BAML functions for NL-to-SQL conversion.
 import os
 import sys
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Literal
+from datetime import datetime
 
+import asyncpg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -99,16 +101,91 @@ class HealthResponse(BaseModel):
     version: str = "0.1.0"
 
 
+class FeedbackRequest(BaseModel):
+    """Request body for submitting AI chat feedback"""
+    user_question: str = Field(..., description="The question the user asked")
+    ai_response: str = Field(..., description="The AI response that was rated")
+    dcid: str = Field(..., description="Organization/DC identifier")
+    rating: Literal["good", "bad"] = Field(..., description="User rating")
+    feedback_text: Optional[str] = Field(None, description="Optional text feedback")
+    user_email: str = Field(..., description="User email address")
+
+
+class FeedbackResponse(BaseModel):
+    """Response from feedback submission"""
+    success: bool
+    id: int
+    message: str
+
+
+# --- New Metrics Models ---
+
+class MetricsRequest(BaseModel):
+    """Request body for logging AI chat metrics"""
+    message_id: str = Field(..., description="Unique message ID from frontend (UUID)")
+    user_question: str = Field(..., description="The question the user asked")
+    ai_response: dict = Field(..., description="Full AI response as JSON object")
+    dcid: str = Field(..., description="Organization/DC identifier")
+    user_email: str = Field(..., description="User email address")
+    input_tokens: int = Field(default=0, description="Input tokens used")
+    output_tokens: int = Field(default=0, description="Output tokens generated")
+    cache_read_input_tokens: int = Field(default=0, description="Tokens read from cache")
+    cache_creation_input_tokens: int = Field(default=0, description="Tokens used to create cache")
+    cost_usd: float = Field(default=0.0, description="Estimated cost in USD")
+
+
+class MetricsResponse(BaseModel):
+    """Response from metrics logging"""
+    success: bool
+    id: int
+    message_id: str
+    message: str
+
+
+class FeedbackUpdateRequest(BaseModel):
+    """Request body for updating feedback on existing metrics record"""
+    rating: Literal["good", "bad"] = Field(..., description="User rating")
+    feedback_text: Optional[str] = Field(None, description="Optional text feedback")
+
+
+class FeedbackUpdateResponse(BaseModel):
+    """Response from feedback update"""
+    success: bool
+    message_id: str
+    message: str
+
+
+# --- Database Connection Pool ---
+
+db_pool: Optional[asyncpg.Pool] = None
+
+
+async def get_db_pool() -> asyncpg.Pool:
+    """Get or create database connection pool"""
+    global db_pool
+    if db_pool is None:
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise HTTPException(status_code=500, detail="DATABASE_URL not configured")
+        db_pool = await asyncpg.create_pool(database_url, min_size=1, max_size=10)
+    return db_pool
+
+
 # --- FastAPI App ---
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    global db_pool
     print("Starting Talk to Data Backend...")
     if not BAML_AVAILABLE:
         print("WARNING: BAML client not available - API will return errors")
     yield
     print("Shutting down...")
+    # Close database pool
+    if db_pool:
+        await db_pool.close()
+        print("Database pool closed")
 
 
 app = FastAPI(
@@ -267,6 +344,161 @@ async def classify_query(request: ClassifyQueryRequest):
     except Exception as e:
         print(f"Error in ClassifyQuery: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/feedback", response_model=FeedbackResponse)
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Submit user feedback on an AI response.
+
+    Stores feedback in PostgreSQL for review and analysis.
+    """
+    try:
+        pool = await get_db_pool()
+
+        async with pool.acquire() as conn:
+            # Insert feedback into database
+            row = await conn.fetchrow(
+                """
+                INSERT INTO ai_chat_feedback
+                    (user_question, ai_response, dcid, rating, feedback_text, user_email)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id
+                """,
+                request.user_question,
+                request.ai_response,
+                request.dcid,
+                request.rating,
+                request.feedback_text,
+                request.user_email,
+            )
+
+            feedback_id = row["id"]
+            print(f"[Feedback] Saved feedback #{feedback_id}: {request.rating} from {request.user_email}")
+
+            return FeedbackResponse(
+                success=True,
+                id=feedback_id,
+                message="Feedback submitted successfully",
+            )
+
+    except asyncpg.exceptions.CheckViolationError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid rating. Must be 'good' or 'bad'.",
+        )
+    except Exception as e:
+        print(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit feedback: {str(e)}")
+
+
+@app.post("/api/metrics", response_model=MetricsResponse)
+async def log_metrics(request: MetricsRequest):
+    """
+    Log AI chat metrics immediately after AI response.
+
+    Stores the question, response, and token metrics in PostgreSQL.
+    User feedback (rating) is updated separately via PATCH endpoint.
+    """
+    import json
+
+    try:
+        pool = await get_db_pool()
+
+        async with pool.acquire() as conn:
+            # Insert metrics into database
+            row = await conn.fetchrow(
+                """
+                INSERT INTO ai_chat_metrics
+                    (message_id, user_question, ai_response, dcid, user_email,
+                     input_tokens, output_tokens, cache_read_input_tokens,
+                     cache_creation_input_tokens, cost_usd)
+                VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10)
+                RETURNING id
+                """,
+                request.message_id,
+                request.user_question,
+                json.dumps(request.ai_response),
+                request.dcid,
+                request.user_email,
+                request.input_tokens,
+                request.output_tokens,
+                request.cache_read_input_tokens,
+                request.cache_creation_input_tokens,
+                request.cost_usd,
+            )
+
+            metrics_id = row["id"]
+            print(f"[Metrics] Logged metrics #{metrics_id} for message {request.message_id}: "
+                  f"in={request.input_tokens}, out={request.output_tokens}, cost=${request.cost_usd:.6f}")
+
+            return MetricsResponse(
+                success=True,
+                id=metrics_id,
+                message_id=request.message_id,
+                message="Metrics logged successfully",
+            )
+
+    except asyncpg.exceptions.UniqueViolationError:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Metrics for message_id '{request.message_id}' already exist.",
+        )
+    except Exception as e:
+        print(f"Error logging metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to log metrics: {str(e)}")
+
+
+@app.patch("/api/metrics/{message_id}/feedback", response_model=FeedbackUpdateResponse)
+async def update_feedback(message_id: str, request: FeedbackUpdateRequest):
+    """
+    Update user feedback for an existing metrics record.
+
+    Called when user clicks thumbs up/down on an AI response.
+    """
+    try:
+        pool = await get_db_pool()
+
+        async with pool.acquire() as conn:
+            # Update feedback on existing record
+            result = await conn.execute(
+                """
+                UPDATE ai_chat_metrics
+                SET rating = $1,
+                    feedback_text = $2,
+                    feedback_at = NOW()
+                WHERE message_id = $3
+                """,
+                request.rating,
+                request.feedback_text,
+                message_id,
+            )
+
+            # Check if record was found
+            if result == "UPDATE 0":
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No metrics record found for message_id '{message_id}'",
+                )
+
+            print(f"[Feedback] Updated feedback for message {message_id}: {request.rating}")
+
+            return FeedbackUpdateResponse(
+                success=True,
+                message_id=message_id,
+                message="Feedback updated successfully",
+            )
+
+    except HTTPException:
+        raise
+    except asyncpg.exceptions.CheckViolationError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid rating. Must be 'good' or 'bad'.",
+        )
+    except Exception as e:
+        print(f"Error updating feedback: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update feedback: {str(e)}")
 
 
 # --- Main ---

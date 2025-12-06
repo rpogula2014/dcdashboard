@@ -640,3 +640,80 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* ==========================================
+   Feedback Buttons Styles
+   ========================================== */
+
+.feedback-buttons {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+.feedback-submitted {
+  font-size: 11px;
+  color: #52c41a;
+}
+
+.feedback-thanks {
+  color: #999;
+}
+
+.feedback-btn {
+  padding: 2px 6px;
+  height: auto;
+  min-width: 24px;
+  color: #bfbfbf;
+  transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+  background: transparent;
+}
+
+.feedback-btn-good:hover,
+.feedback-btn-good.selected {
+  color: #52c41a;
+}
+
+.feedback-btn-bad:hover,
+.feedback-btn-bad.selected {
+  color: #ff4d4f;
+}
+
+.feedback-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 400px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feedback-textarea {
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+.feedback-textarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.feedback-actions {
+  display: flex;
+  justify-content: flex-end;
+}

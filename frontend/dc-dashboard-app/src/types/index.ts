@@ -63,7 +63,9 @@ export type PageKey =
   | 'traction'
   | 'analytics'
   | 'descartes'
-  | 'talkToData';
+  | 'talkToData'
+  | 'exceptionAlerts'
+  | 'alertRulesConfig';
 
 // KPI Card data structure
 export interface KPIData {
@@ -331,4 +333,142 @@ export interface QueryError {
   userMessage: string;
   sql?: string;
   suggestions?: string[];
+}
+
+// ==========================================
+// Exception Alerts - Rule Configuration
+// ==========================================
+
+// Severity levels for alert rules
+export type AlertSeverity = 'critical' | 'warning' | 'info';
+
+// Data sources that can be queried for alerts
+export type AlertDataSource = 'dc_order_lines' | 'route_plans' | 'dc_onhand';
+
+// Operators for simple rule builder
+export type RuleOperator =
+  | '='
+  | '!='
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | 'LIKE'
+  | 'IS NULL'
+  | 'IS NOT NULL';
+
+// Single condition in a rule (for simple builder)
+export interface RuleCondition {
+  field: string;
+  operator: RuleOperator;
+  value: string | number | null;
+}
+
+// Alert rule configuration
+export interface AlertRule {
+  id: string;
+  name: string;
+  description?: string;
+  // Rule definition - either simple conditions or advanced expression
+  conditions?: RuleCondition[];         // Simple builder mode
+  advancedExpression?: string;          // Advanced SQL WHERE clause
+  // Configuration
+  severity: AlertSeverity;
+  dataSource: AlertDataSource;
+  refreshInterval: number;              // seconds (0 = manual only)
+  enabled: boolean;
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Result of evaluating an alert rule
+export interface AlertResult {
+  ruleId: string;
+  ruleName: string;
+  severity: AlertSeverity;
+  matchCount: number;
+  matchingOrders: QueryResultRow[];     // The actual matching records
+  lastChecked: Date;
+  error?: string;                       // If rule execution failed
+}
+
+// Grouped alerts for display
+export interface AlertGroup {
+  rule: AlertRule;
+  result: AlertResult;
+  isExpanded: boolean;
+}
+
+// ==========================================
+// AI Chat Metrics & Feedback Types
+// ==========================================
+
+// Feedback rating options
+export type FeedbackRating = 'good' | 'bad';
+
+// AI response object stored in metrics (JSONB in PostgreSQL)
+export interface AiResponseData {
+  content: string;
+  sql?: string;
+  displayType?: string;
+  chartType?: string;
+  queryResult?: {
+    columns: string[];
+    rowCount: number;
+    executionTime: number;
+    rows: Record<string, unknown>[];
+  };
+  error?: string;
+}
+
+// Payload for logging AI chat metrics (called after each AI response)
+export interface MetricsPayload {
+  message_id: string;
+  user_question: string;
+  ai_response: AiResponseData;
+  dcid: string;
+  user_email: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens: number;
+  cache_creation_input_tokens: number;
+  cost_usd: number;
+}
+
+// Response from metrics logging
+export interface MetricsResponse {
+  success: boolean;
+  id: number;
+  message_id: string;
+  message: string;
+}
+
+// Payload for updating feedback on existing metrics record
+export interface FeedbackUpdatePayload {
+  rating: FeedbackRating;
+  feedback_text?: string;
+}
+
+// Response from feedback update
+export interface FeedbackUpdateResponse {
+  success: boolean;
+  message_id: string;
+  message: string;
+}
+
+// Legacy types (kept for backward compatibility)
+export interface FeedbackPayload {
+  user_question: string;
+  ai_response: string;
+  dcid: string;
+  rating: FeedbackRating;
+  feedback_text?: string;
+  user_email: string;
+}
+
+export interface FeedbackResponse {
+  success: boolean;
+  id: number;
+  message: string;
 }

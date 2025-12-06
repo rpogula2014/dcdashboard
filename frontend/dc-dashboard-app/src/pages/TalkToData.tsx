@@ -14,11 +14,12 @@ import {
 } from '../components/TalkToData';
 import { useOrderContext } from '../contexts';
 import { processNaturalLanguageQuery } from '../services/nlToSql/nlToSqlService';
+import { logMetrics, calculateCost } from '../services/feedbackService';
 import { loadDCOrderLines, loadRoutePlans, loadDCOnhand, getDataLoadState, isDataReady } from '../services/duckdb/dataLoaders';
 import { initializeDuckDB } from '../services/duckdb/duckdbService';
 import { fetchRoutePlans, fetchDCOnhand } from '../services/api';
 import { useDCContext } from '../contexts';
-import type { ChatMessage, DataFreshness as DataFreshnessType, RoutePlanRaw } from '../types';
+import type { ChatMessage, DataFreshness as DataFreshnessType, RoutePlanRaw, FeedbackRating, AiResponseData } from '../types';
 import '../components/TalkToData/TalkToData.css';
 
 const { Title, Text } = Typography;
@@ -26,6 +27,9 @@ const { Title, Text } = Typography;
 // Auto-refresh configuration
 const AUTO_REFRESH_INTERVAL_MS = 30 * 1000; // 30 seconds
 const AUTO_REFRESH_MAX_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+// Hardcoded email for now - will be replaced with Okta auth later
+const HARDCODED_USER_EMAIL = 'user@dcdashboard.local';
 
 // Generate unique message ID
 function generateMessageId(): string {
@@ -37,6 +41,9 @@ export function TalkToData() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showExamples, setShowExamples] = useState(true);
+
+  // Feedback state - tracks which messages have received feedback
+  const [feedbackGiven, setFeedbackGiven] = useState<Map<string, FeedbackRating>>(new Map());
 
   // Data state
   const [dataFreshness, setDataFreshness] = useState<DataFreshnessType>({
@@ -63,7 +70,7 @@ export function TalkToData() {
   const { orders, isLoading: ordersLoading, error: _ordersError, refresh: refreshOrders } = useOrderContext();
   const { selectedDC } = useDCContext();
 
-  // Initialize DuckDB and load data
+  // Initialize DuckDB and load data (skip if already loaded)
   useEffect(() => {
     async function initializeData() {
       try {
@@ -73,36 +80,48 @@ export function TalkToData() {
         // Initialize DuckDB
         await initializeDuckDB();
 
-        // Load order data if available
-        if (orders && orders.length > 0) {
+        // Check current load state to avoid reloading
+        const currentState = getDataLoadState();
+
+        // Load order data if available and not already loaded
+        if (orders && orders.length > 0 && !currentState.dcOrderLines.loaded) {
           await loadDCOrderLines(orders);
+          console.log(`[TalkToData] Loaded ${orders.length} orders into DuckDB`);
+        } else if (currentState.dcOrderLines.loaded) {
+          console.log('[TalkToData] dc_order_lines already loaded, skipping');
         }
 
-        // Fetch and load route plans
-        try {
-          console.log('[TalkToData] Fetching route plans...');
-          const routes = await fetchRoutePlans();
-          setRoutePlans(routes);
-          if (routes.length > 0) {
-            await loadRoutePlans(routes);
+        // Fetch and load route plans (only if not already loaded)
+        if (!currentState.routePlans.loaded) {
+          try {
+            console.log('[TalkToData] Fetching route plans...');
+            const routes = await fetchRoutePlans();
+            setRoutePlans(routes);
+            if (routes.length > 0) {
+              await loadRoutePlans(routes);
+            }
+            console.log(`[TalkToData] Loaded ${routes.length} route plans`);
+          } catch (routeError) {
+            console.warn('[TalkToData] Failed to load route plans:', routeError);
           }
-          console.log(`[TalkToData] Loaded ${routes.length} route plans`);
-        } catch (routeError) {
-          console.warn('[TalkToData] Failed to load route plans:', routeError);
-          // Don't fail initialization if route plans fail
+        } else {
+          console.log('[TalkToData] route_plans already loaded, skipping');
         }
 
-        // Fetch and load DC onhand inventory
-        try {
-          console.log('[TalkToData] Fetching DC onhand inventory...');
-          const onhandData = await fetchDCOnhand(selectedDC);
-          if (onhandData.length > 0) {
-            await loadDCOnhand(onhandData);
+        // Fetch and load DC onhand inventory (only if not already loaded)
+        if (!currentState.dcOnhand.loaded) {
+          try {
+            console.log('[TalkToData] Fetching DC onhand inventory...');
+            const onhandData = await fetchDCOnhand(selectedDC);
+            if (onhandData.length > 0) {
+              await loadDCOnhand(onhandData);
+            }
+            console.log(`[TalkToData] Loaded ${onhandData.length} onhand items`);
+          } catch (onhandError) {
+            console.warn('[TalkToData] Failed to load onhand inventory:', onhandError);
           }
-          console.log(`[TalkToData] Loaded ${onhandData.length} onhand items`);
-        } catch (onhandError) {
-          console.warn('[TalkToData] Failed to load onhand inventory:', onhandError);
-          // Don't fail initialization if onhand fails
+        } else {
+          console.log('[TalkToData] dc_onhand already loaded, skipping');
         }
 
         // Update freshness state
@@ -160,9 +179,12 @@ export function TalkToData() {
       // Process the query
       const { result, nlResult } = await processNaturalLanguageQuery(query);
 
+      // Generate message ID for metrics tracking
+      const messageId = generateMessageId();
+
       // Add assistant message with result
       const assistantMessage: ChatMessage = {
-        id: generateMessageId(),
+        id: messageId,
         role: 'assistant',
         content: nlResult.explanation || '',
         timestamp: new Date(),
@@ -173,6 +195,47 @@ export function TalkToData() {
         usage: nlResult.usage,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Log metrics to PostgreSQL (fire and forget - don't block UI)
+      const usage = nlResult.usage || {
+        input_tokens: 0,
+        output_tokens: 0,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+      };
+
+      const aiResponseData: AiResponseData = {
+        content: nlResult.explanation || '',
+        sql: result.sql,
+        displayType: nlResult.suggestedDisplayType,
+        chartType: nlResult.suggestedChartType,
+        queryResult: result ? {
+          columns: result.columns,
+          rowCount: result.rowCount,
+          executionTime: result.executionTime,
+          rows: result.rows.slice(0, 10) as Record<string, unknown>[],
+        } : undefined,
+      };
+
+      const metricsPayload = {
+        message_id: messageId,
+        user_question: query,
+        ai_response: aiResponseData,
+        dcid: String(selectedDC),
+        user_email: HARDCODED_USER_EMAIL,
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_read_input_tokens: usage.cache_read_input_tokens,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens,
+        cost_usd: calculateCost(usage),
+      };
+
+      console.log('[TalkToData] Logging metrics:', metricsPayload);
+
+      logMetrics(metricsPayload).catch((err) => {
+        // Don't fail the UI if metrics logging fails
+        console.error('[TalkToData] Failed to log metrics:', err);
+      });
     } catch (error) {
       console.error('[TalkToData] Query failed:', error);
 
@@ -222,6 +285,15 @@ export function TalkToData() {
       dcOnhand: loadState.dcOnhand,
     });
   }, [orders, selectedDC]);
+
+  // Handle feedback submission
+  const handleFeedbackSubmitted = useCallback((messageId: string, rating: FeedbackRating) => {
+    setFeedbackGiven((prev) => {
+      const next = new Map(prev);
+      next.set(messageId, rating);
+      return next;
+    });
+  }, []);
 
   // Auto-refresh polling effect
   useEffect(() => {
@@ -428,7 +500,12 @@ export function TalkToData() {
 
         {/* Chat area */}
         <div className="talk-to-data-chat">
-          <ChatHistory messages={messages} isLoading={isLoading} />
+          <ChatHistory
+            messages={messages}
+            isLoading={isLoading}
+            feedbackGiven={feedbackGiven}
+            onFeedbackSubmitted={handleFeedbackSubmitted}
+          />
           <ChatInput
             onSubmit={handleSubmit}
             isLoading={isLoading}

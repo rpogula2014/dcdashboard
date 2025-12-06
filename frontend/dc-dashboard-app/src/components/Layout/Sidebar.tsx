@@ -14,6 +14,8 @@ import {
   MessageOutlined,
   DatabaseOutlined,
   SyncOutlined,
+  AlertOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
 import { useOrderContext, useDCContext } from '../../contexts';
@@ -129,6 +131,19 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       label: !collapsed ? 'AI Tools' : null,
       children: [
         createMenuItem('talkToData', 'Talk to Data', <MessageOutlined />, undefined, '#722ed1', collapsed),
+      ],
+    },
+
+    // Divider
+    { type: 'divider' },
+
+    // Alerts Section
+    {
+      type: 'group',
+      label: !collapsed ? 'Alerts' : null,
+      children: [
+        createMenuItem('exceptionAlerts', 'Exception Alerts', <AlertOutlined />, undefined, '#ff4d4f', collapsed),
+        createMenuItem('alertRulesConfig', 'Configure Rules', <SettingOutlined />, undefined, undefined, collapsed),
       ],
     },
   ], [badgeCounts, collapsed]);

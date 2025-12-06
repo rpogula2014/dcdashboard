@@ -5,7 +5,8 @@
 
 import { Typography, Avatar, Collapse } from 'antd';
 import { UserOutlined, RobotOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import type { ChatMessage as ChatMessageType, TokenUsage } from '../../types';
+import type { ChatMessage as ChatMessageType, TokenUsage, FeedbackRating } from '../../types';
+import { FeedbackButtons } from './FeedbackButtons';
 import { ResultTable } from './ResultTable';
 import { ResultChart } from './ResultChart';
 import { ResultText } from './ResultText';
@@ -140,6 +141,8 @@ function formatSingleValueResult(result: ChatMessageType['queryResult']): string
 interface ChatMessageProps {
   message: ChatMessageType;
   isLoading?: boolean;
+  feedbackGiven?: FeedbackRating;
+  onFeedbackSubmitted?: (messageId: string, rating: FeedbackRating) => void;
 }
 
 /**
@@ -222,9 +225,13 @@ function UserMessage({ message }: { message: ChatMessageType }) {
 function AssistantMessage({
   message,
   isLoading,
+  feedbackGiven,
+  onFeedbackSubmitted,
 }: {
   message: ChatMessageType;
   isLoading?: boolean;
+  feedbackGiven?: FeedbackRating;
+  onFeedbackSubmitted?: (messageId: string, rating: FeedbackRating) => void;
 }) {
   // Show loading state
   if (isLoading) {
@@ -309,17 +316,37 @@ function AssistantMessage({
             </span>
           )}
         </Text>
+
+        {/* Feedback buttons - only show for messages that have metrics logged */}
+        {!feedbackGiven && (
+          <FeedbackButtons
+            messageId={message.id}
+            onFeedbackSubmitted={onFeedbackSubmitted}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-export function ChatMessage({ message, isLoading }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isLoading,
+  feedbackGiven,
+  onFeedbackSubmitted,
+}: ChatMessageProps) {
   if (message.role === 'user') {
     return <UserMessage message={message} />;
   }
 
-  return <AssistantMessage message={message} isLoading={isLoading} />;
+  return (
+    <AssistantMessage
+      message={message}
+      isLoading={isLoading}
+      feedbackGiven={feedbackGiven}
+      onFeedbackSubmitted={onFeedbackSubmitted}
+    />
+  );
 }
 
 export default ChatMessage;

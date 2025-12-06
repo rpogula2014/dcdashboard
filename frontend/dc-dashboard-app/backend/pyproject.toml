@@ -9,6 +9,7 @@ dependencies = [
     "baml-py>=0.76.0",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
+    "asyncpg>=0.29.0",
 ]
 
 [project.optional-dependencies]

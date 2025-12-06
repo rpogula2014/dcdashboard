@@ -14,6 +14,7 @@ export { ChatMessage } from './ChatMessage';
 export { ChatHistory } from './ChatHistory';
 export { ExampleQuestions } from './ExampleQuestions';
 export { DataFreshness, DataFreshnessCompact } from './DataFreshness';
+export { FeedbackButtons } from './FeedbackButtons';
 
 // Loading states
 export {

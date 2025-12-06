@@ -6,16 +6,23 @@
 import { useRef, useEffect } from 'react';
 import { Empty } from 'antd';
 import { MessageOutlined } from '@ant-design/icons';
-import type { ChatMessage as ChatMessageType } from '../../types';
+import type { ChatMessage as ChatMessageType, FeedbackRating } from '../../types';
 import { ChatMessage } from './ChatMessage';
 import './TalkToData.css';
 
 interface ChatHistoryProps {
   messages: ChatMessageType[];
   isLoading?: boolean;
+  feedbackGiven?: Map<string, FeedbackRating>;
+  onFeedbackSubmitted?: (messageId: string, rating: FeedbackRating) => void;
 }
 
-export function ChatHistory({ messages, isLoading = false }: ChatHistoryProps) {
+export function ChatHistory({
+  messages,
+  isLoading = false,
+  feedbackGiven,
+  onFeedbackSubmitted,
+}: ChatHistoryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +63,8 @@ export function ChatHistory({ messages, isLoading = false }: ChatHistoryProps) {
               key={message.id}
               message={message}
               isLoading={isLoadingThisMessage}
+              feedbackGiven={feedbackGiven?.get(message.id)}
+              onFeedbackSubmitted={onFeedbackSubmitted}
             />
           );
         })}
