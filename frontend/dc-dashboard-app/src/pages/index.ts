@@ -9,3 +9,4 @@ export { default as Onhand } from './Onhand';
 export { default as CycleCount } from './CycleCount';
 export { default as ExceptionAlerts } from './ExceptionAlerts';
 export { default as AlertRulesConfig } from './AlertRulesConfig';
+export { default as Invoices } from './Invoices';

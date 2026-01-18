@@ -4,7 +4,7 @@
  */
 
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
-import type { DCOpenOrderLine, ApiResponse, RoutePlanRaw } from '../types';
+import type { DCOpenOrderLine, ApiResponse, RoutePlanRaw, InvoiceLineRaw } from '../types';
 
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -578,6 +578,59 @@ export async function fetchDCOnhand(
   } catch (error) {
     const apiError = formatError(error);
     console.error('[API] Failed to fetch DC onhand inventory:', apiError);
+    throw apiError;
+  }
+}
+
+// =============================
+// RECEIVABLES - INVOICE LINES API
+// =============================
+
+/**
+ * Invoice lines API response wrapper
+ */
+interface InvoiceLinesResponse {
+  data: InvoiceLineRaw[];
+  total: number;
+  dcid: number;
+}
+
+/**
+ * Fetch invoice lines for receivables
+ * Endpoint: GET /api/v1/invoice-lines/?dcid={dcid}
+ *
+ * @param dcid - DC/organization ID
+ * @returns Array of invoice line records (flat structure)
+ */
+export async function fetchInvoiceLines(
+  dcid: number = DEFAULT_DC
+): Promise<InvoiceLineRaw[]> {
+  try {
+    const response = await apiClient.get<InvoiceLineRaw[] | InvoiceLinesResponse>(
+      '/api/v1/invoice-lines/',
+      {
+        params: { dcid },
+      }
+    );
+
+    const responseData = response.data;
+
+    // If response is already an array, return it
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+
+    // If response is wrapped in an object with data property
+    if (responseData && typeof responseData === 'object' && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+
+    // Log unexpected format and return empty array
+    console.warn('[API] Unexpected invoice-lines response format:', responseData);
+    return [];
+  } catch (error) {
+    const apiError = formatError(error);
+    console.error('[API] Failed to fetch invoice lines:', apiError);
     throw apiError;
   }
 }

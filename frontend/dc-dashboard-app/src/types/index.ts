@@ -65,7 +65,8 @@ export type PageKey =
   | 'descartes'
   | 'talkToData'
   | 'exceptionAlerts'
-  | 'alertRulesConfig';
+  | 'alertRulesConfig'
+  | 'invoices';
 
 // KPI Card data structure
 export interface KPIData {
@@ -271,7 +272,7 @@ export interface QueryContext {
 // Example question for suggestions
 export interface ExampleQuestion {
   text: string;
-  category: 'orders' | 'routes' | 'analysis' | 'status';
+  category: 'orders' | 'routes' | 'onhand' | 'invoices';
   description?: string;
 }
 
@@ -288,6 +289,11 @@ export interface DataFreshness {
     lastLoaded: Date | null;
   };
   dcOnhand: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
+  invoiceLines?: {
     loaded: boolean;
     count: number;
     lastLoaded: Date | null;
@@ -455,6 +461,117 @@ export interface FeedbackUpdateResponse {
   success: boolean;
   message_id: string;
   message: string;
+}
+
+// ==========================================
+// Receivables - Invoice Types
+// ==========================================
+
+// Raw invoice line from API (flat structure)
+export interface InvoiceLineRaw {
+  // Invoice header information
+  batchsource: string | null;
+  trx_number: string | null;
+  invtranstype: string | null;
+  shipmethod: string | null;
+  trx_date: string | null;
+  customer_trx_id: number | null;
+  ordertype: string | null;
+  billcustname: string | null;
+  shipcustname: string | null;
+  shiploc: string | null;
+  // Line details
+  line_number: number | null;
+  line_type: 'LINE' | 'TAX' | null;
+  quantity_invoiced: number | null;
+  extended_amount: number | null;
+  unit_selling_price: number | null;
+  sales_order: string | null;
+  sales_order_line: string | null;
+  customer_trx_line_id: number | null;
+  // Item information (when line_type = LINE)
+  item_number: string | null;
+  productgrp: string | null;
+  vendor: string | null;
+  style: string | null;
+  // Tax information (when line_type = TAX)
+  tax_name: string | null;
+  tax_rate: number | null;
+}
+
+// Transformed invoice line for display
+export interface InvoiceLine {
+  line_number: number;
+  line_type: 'LINE' | 'TAX';
+  quantity_invoiced: number;
+  extended_amount: number;
+  unit_selling_price: number;
+  sales_order: string | null;
+  sales_order_line: string | null;
+  customer_trx_line_id: number;
+  // Item information (when line_type = LINE)
+  item_number: string | null;
+  productgrp: string | null;
+  vendor: string | null;
+  style: string | null;
+  // Tax information (when line_type = TAX)
+  tax_name: string | null;
+  tax_rate: number | null;
+}
+
+// Invoice header with nested lines (transformed from flat data)
+export interface Invoice {
+  // Header fields
+  batchsource: string | null;
+  trx_number: string;
+  invtranstype: string;
+  shipmethod: string | null;
+  trx_date: string;
+  customer_trx_id: number;
+  ordertype: string | null;
+  billcustname: string;
+  shipcustname: string | null;
+  shiploc: string | null;
+  // Nested line details
+  lines: InvoiceLine[];
+  // Computed fields
+  lineCount: number;
+  totalAmount: number;
+}
+
+// Invoice group by transaction type (Level 1)
+export interface InvoiceGroup {
+  invtranstype: string;
+  invoices: Invoice[];
+  // Computed totals
+  invoiceCount: number;
+  lineCount: number;
+  totalAmount: number;
+}
+
+// Statistics for invoice data
+export interface InvoiceStats {
+  totalInvoices: number;
+  totalLines: number;
+  totalUnits: number;
+  totalCustomers: number;
+  totalAmount: number;
+}
+
+// API Error type
+export interface ApiError {
+  message: string;
+  status?: number;
+}
+
+// Hook return type for useInvoices
+export interface UseInvoicesResult {
+  rawData: InvoiceLineRaw[];
+  invoiceGroups: InvoiceGroup[];
+  stats: InvoiceStats;
+  isLoading: boolean;
+  error: ApiError | null;
+  refresh: () => Promise<void>;
 }
 
 // Legacy types (kept for backward compatibility)

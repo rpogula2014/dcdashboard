@@ -1,0 +1,116 @@
+# Implementation Tasks
+
+**Project**: invoice-analytics
+**Generated**: 2025-12-08T14:25:00Z
+**Updated**: 2025-12-08 - Removed "Other" grouping, added units stat, TAX exclusion, InvoiceContext integration
+
+---
+
+## Phase 1: Data Preparation & Aggregation
+
+- [x] Create useInvoiceAnalytics hook that consumes useInvoices data and provides aggregation functions (ref: Data Source)
+  Task ID: phase-1-data-preparation-1
+
+- [x] Implement groupByAttribute function to aggregate invoices by productgrp, vendor, or style with count and sum (ref: Chart 1)
+  Task ID: phase-1-data-preparation-2
+
+- [x] Implement groupByField helper for single-field aggregation (ordertype, invtranstype, shipmethod) (ref: Charts 2-4)
+  Task ID: phase-1-data-preparation-3
+
+- [x] ~~Add "Long Tail" aggregation logic~~ **REMOVED** - User requested no "Other" grouping
+  Task ID: phase-1-data-preparation-4
+
+- [x] Calculate summary statistics: total invoice count, total lines, total units, total amount (ref: Summary Stats Bar)
+  Task ID: phase-1-data-preparation-5
+  Note: Added units stat, excludes TAX lines from line count
+
+## Phase 2: Chart Components
+
+- [x] Create InvoiceBarChart component matching ShippedProductChart pattern (horizontal bars with count + amount) (ref: Chart Requirements)
+  Task ID: phase-2-chart-components-1
+
+- [x] Add sorting logic - sort bars by count/amount descending (largest first) (ref: Chart Requirements)
+  Task ID: phase-2-chart-components-2
+
+- [x] Handle null/empty values as "Unknown" in chart display (ref: Edge Cases)
+  Task ID: phase-2-chart-components-3
+
+- [x] Add click handler prop to InvoiceBarChart for drill-down functionality (ref: Drill-down Modal)
+  Task ID: phase-2-chart-components-4
+
+## Phase 3: Drill-Down Modal
+
+- [x] Create InvoiceDetailsModal component following BackorderDetailsModal pattern (ref: Drill-down Modal)
+  Task ID: phase-3-drill-down-modal-1
+
+- [x] Accept filtered invoice data as prop and display in table format (ref: Drill-down Modal)
+  Task ID: phase-3-drill-down-modal-2
+
+- [x] Add modal state management (visible, selectedGroup, selectedInvoices) (ref: Drill-down Modal)
+  Task ID: phase-3-drill-down-modal-3
+
+## Phase 4: Analytics Page Integration
+
+- [x] Add Invoices summary stats bar to Analytics.tsx below Backorders section (ref: Summary Stats Bar)
+  Task ID: phase-4-analytics-integration-1
+
+- [x] Create collapsible panel for Chart 1 (By Item Attributes) with LOV selector inside panel (ref: Chart 1)
+  Task ID: phase-4-analytics-integration-2
+
+- [x] Add Select dropdown inside Chart 1 panel to switch between Product Group/Vendor/Style (ref: LOV Selector)
+  Task ID: phase-4-analytics-integration-3
+
+- [x] Create collapsible panel for Chart 2 (By Order Type) with InvoiceBarChart (ref: Chart 2)
+  Task ID: phase-4-analytics-integration-4
+
+- [x] Create collapsible panel for Chart 3 (By Transaction Type) with InvoiceBarChart (ref: Chart 3)
+  Task ID: phase-4-analytics-integration-5
+
+- [x] Create collapsible panel for Chart 4 (By Ship Method) with InvoiceBarChart (ref: Chart 4)
+  Task ID: phase-4-analytics-integration-6
+
+- [x] Wire up bar click handlers to open InvoiceDetailsModal with filtered data (ref: Drill-down Modal)
+  Task ID: phase-4-analytics-integration-7
+
+- [x] Update Analytics page to use useInvoiceContext (shared data from InvoiceProvider)
+  Task ID: phase-4-analytics-integration-8
+  Note: Added 2025-12-08 - Invoice data fetched once on app load, shared between pages
+
+- [x] Collapse all chart panels by default
+  Task ID: phase-4-analytics-integration-9
+  Note: Added 2025-12-08 - defaultActiveKey={[]} for all Collapse components
+
+## Phase 5: Styling & Polish
+
+- [x] Match Invoices section styling with existing Shipped/Backorders sections (ref: Consistent Styling)
+  Task ID: phase-5-styling-polish-1
+
+- [x] Add appropriate icons to panel headers (matching existing pattern) (ref: UI/UX Pattern)
+  Task ID: phase-5-styling-polish-2
+
+- [x] Handle empty state gracefully - show "No invoices" message when data is empty (ref: Edge Cases)
+  Task ID: phase-5-styling-polish-3
+
+## Phase 6: Testing & Verification
+
+- [ ] Manually test: Verify summary stats bar shows accurate totals (ref: Success Criteria)
+  Task ID: phase-6-testing-1
+
+- [ ] Manually test: All 4 charts render with correct data (ref: Success Criteria)
+  Task ID: phase-6-testing-2
+
+- [ ] Manually test: Chart 1 LOV selector switches grouping dynamically (ref: Success Criteria)
+  Task ID: phase-6-testing-3
+
+- [ ] Manually test: Clicking bars opens drill-down modal with correct filtered data (ref: Success Criteria)
+  Task ID: phase-6-testing-4
+
+- [x] ~~Manually test: Small contributors (<5%) appear in "Other" category~~ **N/A** - "Other" grouping removed
+  Task ID: phase-6-testing-5
+
+- [ ] Manually test: Empty state displays correctly when no invoice data (ref: Success Criteria)
+  Task ID: phase-6-testing-6
+
+---
+
+*Generated by Clavix /clavix:plan*

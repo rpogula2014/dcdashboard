@@ -8,3 +8,4 @@ baml_client
 .env
 *.pem
 *.crt
+original-prompt.md

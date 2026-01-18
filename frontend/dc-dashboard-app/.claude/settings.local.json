@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(PGPASSWORD=cocoindex psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(pip install:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(uv pip install:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

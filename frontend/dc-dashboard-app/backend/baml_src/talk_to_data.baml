@@ -52,11 +52,26 @@ class DCOnhandColumn {
   example_values string[] @description("Example values to help understand the data")
 }
 
+// Invoice Lines table schema
+class InvoiceLinesSchema {
+  table_name string @description("Always 'invoice_lines'")
+  description string @description("Invoice lines from receivables with header info, line details, amounts, and tax information")
+  columns InvoiceLinesColumn[]
+}
+
+class InvoiceLinesColumn {
+  name string
+  type string @description("SQL data type: VARCHAR, INTEGER, DOUBLE, etc.")
+  description string @description("Human-readable description of what this column contains")
+  example_values string[] @description("Example values to help understand the data")
+}
+
 // Combined schema context for the LLM
 class DatabaseSchema {
   dc_order_lines DCOrderLinesSchema
   route_plans RoutePlansSchema
   dc_onhand DCOnhandSchema
+  invoice_lines InvoiceLinesSchema
 }
 
 // -------------------------------------------
@@ -141,11 +156,11 @@ function ConvertNLToSQL(user_query: string, schema_context: string, context_info
     ## Rules for SQL Generation
 
     1. **DuckDB Syntax**: Use DuckDB-compatible SQL syntax
-    2. **Table Names**: Only use tables defined in the schema (dc_order_lines, route_plans, dc_onhand)
+    2. **Table Names**: Only use tables defined in the schema (dc_order_lines, route_plans, dc_onhand, invoice_lines)
     3. **Column Names**: CRITICAL - Only use EXACT column names from the schema. Do NOT invent or modify column names.
     4. **Case Sensitivity**: Column names are case-sensitive as stored
     5. **NULL Handling**: Use proper NULL checks (IS NULL, IS NOT NULL, COALESCE)
-    6. **Date Columns**: ordered_date, schedule_ship_date, route_start_date are VARCHAR columns with ISO datetime strings (e.g., '2025-12-03T23:59:00'). Use CAST(column AS DATE) to convert to DATE for comparisons. Example: CAST(schedule_ship_date AS DATE) = CURRENT_DATE
+    6. **Date Columns**: ordered_date, schedule_ship_date, route_start_date, trx_date are VARCHAR columns with ISO datetime strings (e.g., '2025-12-03T23:59:00'). Use CAST(column AS DATE) to convert to DATE for comparisons. Example: CAST(schedule_ship_date AS DATE) = CURRENT_DATE
     7. **Aggregations**: Include GROUP BY when using aggregate functions
     8. **Limit Results**: Add LIMIT clause for potentially large result sets (default LIMIT 100)
     9. **Order Results**: Include ORDER BY for consistent results
@@ -176,6 +191,19 @@ function ConvertNLToSQL(user_query: string, schema_context: string, context_info
     - Items by product group: SELECT product_group, COUNT(*) as item_count, SUM(quantity) as total_qty FROM dc_onhand GROUP BY product_group ORDER BY total_qty DESC
     - Search for item: SELECT * FROM dc_onhand WHERE itemnumber LIKE '%ITEMCODE%' OR item_description LIKE '%keyword%'
     - Items in locator: SELECT * FROM dc_onhand WHERE locator = 'A1-01-01'
+
+    ### Invoice (invoice_lines) Queries
+    **Note**: Each row is a line within an invoice. Use customer_trx_id to group by invoice. line_type is 'LINE' for product lines and 'TAX' for tax lines.
+    - Count invoices: SELECT COUNT(DISTINCT customer_trx_id) as invoice_count FROM invoice_lines
+    - Invoices by type: SELECT invtranstype, COUNT(DISTINCT customer_trx_id) as count FROM invoice_lines GROUP BY invtranstype ORDER BY count DESC
+    - Total amount by transaction type: SELECT invtranstype, SUM(extended_amount) as total_amount FROM invoice_lines WHERE line_type = 'LINE' GROUP BY invtranstype ORDER BY total_amount DESC
+    - Invoices for customer: SELECT DISTINCT trx_number, trx_date, billcustname, SUM(extended_amount) as total FROM invoice_lines WHERE billcustname LIKE '%CustomerName%' GROUP BY trx_number, trx_date, billcustname ORDER BY trx_date DESC
+    - Invoices today: SELECT trx_number, billcustname, SUM(extended_amount) as total FROM invoice_lines WHERE CAST(trx_date AS DATE) = CURRENT_DATE GROUP BY trx_number, billcustname
+    - Top customers by invoice amount: SELECT billcustname, SUM(extended_amount) as total_amount, COUNT(DISTINCT customer_trx_id) as invoice_count FROM invoice_lines WHERE line_type = 'LINE' GROUP BY billcustname ORDER BY total_amount DESC LIMIT 10
+    - Invoice details: SELECT trx_number, line_number, item_number, quantity_invoiced, unit_selling_price, extended_amount FROM invoice_lines WHERE trx_number = '12345' ORDER BY line_number
+    - Credit memos: SELECT trx_number, trx_date, billcustname, SUM(extended_amount) as total FROM invoice_lines WHERE invtranstype = 'Credit Memo' GROUP BY trx_number, trx_date, billcustname ORDER BY trx_date DESC LIMIT 100
+    - Sales by product group: SELECT productgrp, SUM(quantity_invoiced) as qty, SUM(extended_amount) as amount FROM invoice_lines WHERE line_type = 'LINE' GROUP BY productgrp ORDER BY amount DESC
+    - Sales by vendor: SELECT vendor, SUM(quantity_invoiced) as qty, SUM(extended_amount) as amount FROM invoice_lines WHERE line_type = 'LINE' AND vendor IS NOT NULL GROUP BY vendor ORDER BY amount DESC
 
     {{ _.role("user") }}
     {% if context_info %}
@@ -245,10 +273,31 @@ function ClassifyQuery(user_query: string, available_tables: string[]) -> QueryR
     - productgrp (VARCHAR): Product group description
     - style (VARCHAR): Product style identifier
 
+    ## Table: invoice_lines (Key Columns)
+    - customer_trx_id (INTEGER): Invoice transaction ID (unique per invoice)
+    - trx_number (VARCHAR): Invoice number (display value)
+    - trx_date (VARCHAR): Invoice date
+    - invtranstype (VARCHAR): Transaction type (Invoice, Credit Memo, Debit Memo)
+    - billcustname (VARCHAR): Bill-to customer name
+    - shipcustname (VARCHAR): Ship-to customer name
+    - shiploc (VARCHAR): Ship-to location
+    - line_number (INTEGER): Line number within invoice
+    - line_type (VARCHAR): 'LINE' for product lines, 'TAX' for tax lines
+    - is_tax_line (INTEGER): 1 if TAX line, 0 if LINE
+    - item_number (VARCHAR): Item/SKU number
+    - productgrp (VARCHAR): Product group
+    - vendor (VARCHAR): Vendor name
+    - quantity_invoiced (DOUBLE): Quantity invoiced
+    - unit_selling_price (DOUBLE): Unit selling price
+    - extended_amount (DOUBLE): Extended amount (qty * price)
+    - sales_order (VARCHAR): Related sales order number
+    - shipmethod (VARCHAR): Shipping method
+
     ## JOIN Capabilities (LOCAL_DATA)
-    Tables can be joined on: order_number, trip_id, delivery_id, ordered_item, inventory_item_id, itemnumber
+    Tables can be joined on: order_number, trip_id, delivery_id, ordered_item, inventory_item_id, itemnumber, sales_order
     Example: "Which orders are on route X?" → JOIN dc_order_lines with route_plans
     Example: "What's the onhand for items on order?" → JOIN dc_order_lines with dc_onhand on inventory_item_id
+    Example: "Which invoices are for orders shipping today?" → JOIN invoice_lines with dc_order_lines on sales_order = order_number
 
     ## Available API Endpoints (for data NOT in local tables)
     - /api/v1/order-holds/history - Hold history details (WHY held, WHO held, WHEN)
@@ -258,7 +307,7 @@ function ClassifyQuery(user_query: string, available_tables: string[]) -> QueryR
 
     ## Classification Rules
 
-    LOCAL_DATA (use primary_table: 'dc_order_lines', 'route_plans', or 'dc_onhand'):
+    LOCAL_DATA (use primary_table: 'dc_order_lines', 'route_plans', 'dc_onhand', or 'invoice_lines'):
     - Order counts, statuses, filters, aggregations
     - Questions about hold_applied/hold_released flags (is it held? Y/N)
     - Questions about routed/planned status
@@ -274,6 +323,12 @@ function ClassifyQuery(user_query: string, available_tables: string[]) -> QueryR
     - Inventory by vendor or product group
     - Onhand quantity lookups for specific items
     - Total inventory analysis and summaries
+    - Invoice counts, amounts, and summaries
+    - Invoices by transaction type (Invoice, Credit Memo, Debit Memo)
+    - Invoices by customer (billcustname)
+    - Invoice line details and amounts
+    - Sales analysis by product group, vendor, or customer
+    - Invoice date filtering and trends
 
     NEEDS_API:
     - WHY was an order held? (hold history details)
@@ -393,7 +448,7 @@ test classify_local_query {
   functions [ClassifyQuery]
   args {
     user_query #"How many orders are scheduled to ship today?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -401,7 +456,7 @@ test classify_api_query {
   functions [ClassifyQuery]
   args {
     user_query #"Why was order 12345 put on hold?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -411,7 +466,7 @@ test classify_routed_orders_local {
   functions [ClassifyQuery]
   args {
     user_query #"Show me all orders that are routed but not planned"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -420,7 +475,7 @@ test classify_join_query_local {
   functions [ClassifyQuery]
   args {
     user_query #"Which orders are on route ROUTE001 today?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -428,7 +483,7 @@ test classify_localplus_local {
   functions [ClassifyQuery]
   args {
     user_query #"Show backorders that have local+ availability"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -436,7 +491,7 @@ test classify_hold_status_local {
   functions [ClassifyQuery]
   args {
     user_query #"How many orders are currently on hold?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -444,7 +499,7 @@ test classify_network_inventory_api {
   functions [ClassifyQuery]
   args {
     user_query #"Do other DCs have stock for item CSN.59000370?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -452,7 +507,7 @@ test classify_hybrid_hold_history {
   functions [ClassifyQuery]
   args {
     user_query #"Which held orders were released in the last hour and why?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -460,7 +515,7 @@ test classify_product_group_local {
   functions [ClassifyQuery]
   args {
     user_query #"Show me backorders grouped by vendor and product group"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -468,7 +523,7 @@ test classify_route_stops_local {
   functions [ClassifyQuery]
   args {
     user_query #"How many stops does each route have today?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -540,7 +595,7 @@ test classify_onhand_local {
   functions [ClassifyQuery]
   args {
     user_query #"What items are in STOCK subinventory?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -548,7 +603,7 @@ test classify_inventory_by_vendor_local {
   functions [ClassifyQuery]
   args {
     user_query #"Show inventory grouped by vendor"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }
 
@@ -556,6 +611,68 @@ test classify_onhand_for_orders_local {
   functions [ClassifyQuery]
   args {
     user_query #"What is the onhand quantity for items that are backordered?"#
-    available_tables ["dc_order_lines", "route_plans", "dc_onhand"]
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
+  }
+}
+
+// -------------------------------------------
+// Invoice Lines Tests
+// -------------------------------------------
+
+test invoice_count_by_type {
+  functions [ConvertNLToSQL]
+  args {
+    user_query #"How many invoices do we have by transaction type?"#
+    schema_context #"
+      Table: invoice_lines
+      Columns:
+      - customer_trx_id (INTEGER): Invoice transaction ID (unique per invoice)
+      - trx_number (VARCHAR): Invoice number
+      - invtranstype (VARCHAR): Transaction type (Invoice, Credit Memo, Debit Memo)
+      - billcustname (VARCHAR): Bill-to customer name
+      - line_type (VARCHAR): 'LINE' for product lines, 'TAX' for tax lines
+      - extended_amount (DOUBLE): Extended amount
+    "#
+    context_info ""
+  }
+}
+
+test invoice_top_customers {
+  functions [ConvertNLToSQL]
+  args {
+    user_query #"Who are our top 10 customers by invoice amount?"#
+    schema_context #"
+      Table: invoice_lines
+      Columns:
+      - customer_trx_id (INTEGER): Invoice transaction ID
+      - billcustname (VARCHAR): Bill-to customer name
+      - line_type (VARCHAR): 'LINE' for product lines, 'TAX' for tax lines
+      - extended_amount (DOUBLE): Extended amount
+    "#
+    context_info ""
+  }
+}
+
+test classify_invoice_local {
+  functions [ClassifyQuery]
+  args {
+    user_query #"Show me all credit memos from this month"#
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
+  }
+}
+
+test classify_invoice_by_customer_local {
+  functions [ClassifyQuery]
+  args {
+    user_query #"What invoices do we have for customer ABC Corp?"#
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
+  }
+}
+
+test classify_sales_analysis_local {
+  functions [ClassifyQuery]
+  args {
+    user_query #"Show sales by product group for this week"#
+    available_tables ["dc_order_lines", "route_plans", "dc_onhand", "invoice_lines"]
   }
 }

@@ -1,8 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ConfigProvider, Layout, theme, Spin, Alert } from 'antd';
 import { Sidebar, Header } from './components/Layout';
-import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes, TalkToData, Onhand, CycleCount, ExceptionAlerts, AlertRulesConfig } from './pages';
-import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext, AlertRulesProvider } from './contexts';
+import { Summary, RouteTruck, OtherShipMethods, ISOs, Analytics, Descartes, TalkToData, Onhand, CycleCount, ExceptionAlerts, AlertRulesConfig, Invoices } from './pages';
+import { OrderProvider, useOrderContext, DCProvider, useDCContext, RefreshProvider, useRefreshContext, AlertRulesProvider, InvoiceProvider } from './contexts';
 import type { PageKey } from './types';
 import './App.css';
 
@@ -35,6 +35,7 @@ const pageTitles: Record<PageKey, { title: string; subtitle?: string }> = {
   talkToData: { title: 'Talk to Data', subtitle: 'AI-Powered Queries' },
   exceptionAlerts: { title: 'Exception Alerts', subtitle: 'Monitor Exceptions' },
   alertRulesConfig: { title: 'Alert Rules', subtitle: 'Configuration' },
+  invoices: { title: 'Invoices', subtitle: 'Receivables' },
 };
 
 /**
@@ -91,6 +92,8 @@ function AppContent() {
         return <ExceptionAlerts />;
       case 'alertRulesConfig':
         return <AlertRulesConfig />;
+      case 'invoices':
+        return <Invoices />;
       default:
         return <Summary />;
     }
@@ -179,7 +182,7 @@ function OrderProviderWithDC({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Main App component with DCProvider, RefreshProvider, OrderProvider, and AlertRulesProvider wrappers
+ * Main App component with DCProvider, RefreshProvider, OrderProvider, AlertRulesProvider, and InvoiceProvider wrappers
  */
 function App() {
   return (
@@ -187,9 +190,11 @@ function App() {
       <DCProvider>
         <RefreshProvider>
           <AlertRulesProvider>
-            <OrderProviderWithDC>
-              <AppContent />
-            </OrderProviderWithDC>
+            <InvoiceProvider>
+              <OrderProviderWithDC>
+                <AppContent />
+              </OrderProviderWithDC>
+            </InvoiceProvider>
           </AlertRulesProvider>
         </RefreshProvider>
       </DCProvider>

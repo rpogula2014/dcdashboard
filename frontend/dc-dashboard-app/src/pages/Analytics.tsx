@@ -7,25 +7,42 @@ import {
   CarOutlined,
   ShoppingOutlined,
   TeamOutlined,
+  FileTextOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
-import { useOrderContext } from '../contexts';
+import { useOrderContext, useInvoiceContext } from '../contexts';
 import {
   BackorderLinesChart,
   BackorderUnitsChart,
   BackorderDetailsModal,
   ShippedTripsChart,
   ShippedProductChart,
+  InvoiceBarChart,
+  InvoiceDetailsModal,
   type GroupBy,
   type GroupedData,
   type ShippedTripData,
   type ShippedProductData,
 } from '../components/Analytics';
+import {
+  useInvoiceAnalytics,
+  type InvoiceGroupByAttribute,
+  type InvoiceChartData,
+} from '../hooks/useInvoiceAnalytics';
 
 export function Analytics() {
   const { orderRows } = useOrderContext();
   const [groupBy, setGroupBy] = useState<GroupBy>('item');
   const [selectedGroup, setSelectedGroup] = useState<GroupedData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Invoice state - uses shared context (fetched on app load)
+  const { rawData: invoiceRawData, isLoading: invoicesLoading } = useInvoiceContext();
+  const invoiceAnalytics = useInvoiceAnalytics(invoiceRawData);
+  const [invoiceGroupBy, setInvoiceGroupBy] = useState<InvoiceGroupByAttribute>('productgrp');
+  const [selectedInvoiceGroup, setSelectedInvoiceGroup] = useState<InvoiceChartData | null>(null);
+  const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
+  const [invoiceModalLabel, setInvoiceModalLabel] = useState('');
 
   // Filter to backorder only (reserved_qty < ordered_quantity)
   const backorderRows = useMemo(() => {
@@ -197,10 +214,43 @@ export function Analytics() {
     };
   }, [shippedRows]);
 
-  // Handle bar click
+  // Handle bar click for backorders
   const handleBarClick = (data: GroupedData) => {
     setSelectedGroup(data);
     setModalVisible(true);
+  };
+
+  // Handle invoice bar click for drill-down
+  const handleInvoiceBarClick = (data: InvoiceChartData, label: string) => {
+    setSelectedInvoiceGroup(data);
+    setInvoiceModalLabel(label);
+    setInvoiceModalVisible(true);
+  };
+
+  // Get invoice chart data
+  const invoiceByAttribute = invoiceAnalytics.groupByAttribute(invoiceGroupBy);
+  const invoiceByOrderType = invoiceAnalytics.groupByField('ordertype');
+  const invoiceByTransType = invoiceAnalytics.groupByField('invtranstype');
+  const invoiceByShipMethod = invoiceAnalytics.groupByField('shipmethod');
+
+  // Format currency for display
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  // Get label for current invoice attribute grouping
+  const getAttributeLabel = (attr: InvoiceGroupByAttribute) => {
+    switch (attr) {
+      case 'productgrp': return 'Product Group';
+      case 'vendor': return 'Vendor';
+      case 'style': return 'Style';
+      default: return attr;
+    }
   };
 
   return (
@@ -232,7 +282,7 @@ export function Analytics() {
 
       {/* Shipped Charts */}
       <Collapse
-        defaultActiveKey={['shipped-trips', 'shipped-product', 'shipped-vendor']}
+        defaultActiveKey={[]}
         size="small"
         style={{ marginBottom: 12 }}
         items={[
@@ -317,7 +367,7 @@ export function Analytics() {
 
           {/* Backorder Charts */}
           <Collapse
-            defaultActiveKey={['lines', 'units']}
+            defaultActiveKey={[]}
             size="small"
             style={{ marginBottom: 12 }}
             items={[
@@ -355,6 +405,149 @@ export function Analytics() {
         visible={modalVisible}
         selectedGroup={selectedGroup}
         onClose={() => setModalVisible(false)}
+      />
+
+      {/* Invoices Section */}
+      {!invoicesLoading && invoiceRawData.length > 0 && (
+        <>
+          <div className="stats-bar" style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
+                Invoices
+              </span>
+              <div style={{ width: '1px', height: '14px', background: '#e8e8e8' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FileTextOutlined style={{ fontSize: 12, color: '#1890ff' }} />
+                <span style={{ color: '#999', fontSize: 11 }}>Invoices:</span>
+                <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>
+                  {invoiceAnalytics.stats.totalInvoices.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <BarChartOutlined style={{ fontSize: 12, color: '#52c41a' }} />
+                <span style={{ color: '#999', fontSize: 11 }}>Lines:</span>
+                <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>
+                  {invoiceAnalytics.stats.totalLines.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShoppingOutlined style={{ fontSize: 12, color: '#fa8c16' }} />
+                <span style={{ color: '#999', fontSize: 11 }}>Units:</span>
+                <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>
+                  {invoiceAnalytics.stats.totalUnits.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <DollarOutlined style={{ fontSize: 12, color: '#722ed1' }} />
+                <span style={{ color: '#999', fontSize: 11 }}>Amount:</span>
+                <span style={{ color: '#333', fontWeight: 600, fontSize: 12 }}>
+                  {formatCurrency(invoiceAnalytics.stats.totalAmount)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice Charts */}
+          <Collapse
+            defaultActiveKey={[]}
+            size="small"
+            style={{ marginBottom: 12 }}
+            items={[
+              {
+                key: 'invoice-attribute',
+                label: (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span style={{ fontSize: 12 }}>
+                      <ShoppingOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                      By {getAttributeLabel(invoiceGroupBy)} ({invoiceByAttribute.length})
+                    </span>
+                  </div>
+                ),
+                extra: (
+                  <Select
+                    value={invoiceGroupBy}
+                    onChange={(value) => setInvoiceGroupBy(value)}
+                    size="small"
+                    style={{ width: 130 }}
+                    onClick={(e) => e.stopPropagation()}
+                    options={[
+                      { value: 'productgrp', label: 'Product Group' },
+                      { value: 'vendor', label: 'Vendor' },
+                      { value: 'style', label: 'Style' },
+                    ]}
+                  />
+                ),
+                children: invoiceByAttribute.length > 0 ? (
+                  <InvoiceBarChart
+                    data={invoiceByAttribute}
+                    onBarClick={(data) => handleInvoiceBarClick(data, getAttributeLabel(invoiceGroupBy))}
+                  />
+                ) : (
+                  <Empty description="No invoice data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ),
+              },
+              {
+                key: 'invoice-ordertype',
+                label: (
+                  <span style={{ fontSize: 12 }}>
+                    <FileTextOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                    By Order Type ({invoiceByOrderType.length})
+                  </span>
+                ),
+                children: invoiceByOrderType.length > 0 ? (
+                  <InvoiceBarChart
+                    data={invoiceByOrderType}
+                    onBarClick={(data) => handleInvoiceBarClick(data, 'Order Type')}
+                  />
+                ) : (
+                  <Empty description="No invoice data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ),
+              },
+              {
+                key: 'invoice-transtype',
+                label: (
+                  <span style={{ fontSize: 12 }}>
+                    <LineChartOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                    By Transaction Type ({invoiceByTransType.length})
+                  </span>
+                ),
+                children: invoiceByTransType.length > 0 ? (
+                  <InvoiceBarChart
+                    data={invoiceByTransType}
+                    onBarClick={(data) => handleInvoiceBarClick(data, 'Transaction Type')}
+                  />
+                ) : (
+                  <Empty description="No invoice data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ),
+              },
+              {
+                key: 'invoice-shipmethod',
+                label: (
+                  <span style={{ fontSize: 12 }}>
+                    <CarOutlined style={{ marginRight: 6, fontSize: 11 }} />
+                    By Ship Method ({invoiceByShipMethod.length})
+                  </span>
+                ),
+                children: invoiceByShipMethod.length > 0 ? (
+                  <InvoiceBarChart
+                    data={invoiceByShipMethod}
+                    onBarClick={(data) => handleInvoiceBarClick(data, 'Ship Method')}
+                  />
+                ) : (
+                  <Empty description="No invoice data" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ),
+              },
+            ]}
+          />
+        </>
+      )}
+
+      {/* Invoice Details Modal */}
+      <InvoiceDetailsModal
+        visible={invoiceModalVisible}
+        selectedGroup={selectedInvoiceGroup}
+        groupLabel={invoiceModalLabel}
+        onClose={() => setInvoiceModalVisible(false)}
       />
     </div>
   );

@@ -105,11 +105,11 @@ export function DataFreshness({
   onRefresh,
   isRefreshing = false,
 }: DataFreshnessProps) {
-  const { dcOrderLines, routePlans, dcOnhand } = freshness;
+  const { dcOrderLines, routePlans, dcOnhand, invoiceLines } = freshness;
 
   // Determine overall status
-  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded;
-  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded]
+  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded || invoiceLines?.loaded;
+  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded, invoiceLines?.lastLoaded]
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0];
 
@@ -156,6 +156,14 @@ export function DataFreshness({
           count={dcOnhand.count}
           lastLoaded={dcOnhand.lastLoaded}
         />
+        {invoiceLines && (
+          <DatasetStatus
+            name="Invoices"
+            loaded={invoiceLines.loaded}
+            count={invoiceLines.count}
+            lastLoaded={invoiceLines.lastLoaded}
+          />
+        )}
       </Space>
     </div>
   );
@@ -169,9 +177,9 @@ export function DataFreshnessCompact({
 }: {
   freshness: DataFreshnessType;
 }) {
-  const { dcOrderLines, routePlans, dcOnhand } = freshness;
-  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded;
-  const totalCount = dcOrderLines.count + routePlans.count + dcOnhand.count;
+  const { dcOrderLines, routePlans, dcOnhand, invoiceLines } = freshness;
+  const isLoaded = dcOrderLines.loaded || routePlans.loaded || dcOnhand.loaded || invoiceLines?.loaded;
+  const totalCount = dcOrderLines.count + routePlans.count + dcOnhand.count + (invoiceLines?.count ?? 0);
 
   if (!isLoaded) {
     return (
@@ -183,9 +191,9 @@ export function DataFreshnessCompact({
     );
   }
 
-  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded]
-    .filter(Boolean)
-    .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0];
+  const lastUpdated = [dcOrderLines.lastLoaded, routePlans.lastLoaded, dcOnhand.lastLoaded, invoiceLines?.lastLoaded]
+    .filter((d): d is Date => d != null)
+    .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
 
   const color = getFreshnessColor(lastUpdated);
 
@@ -196,6 +204,7 @@ export function DataFreshnessCompact({
           <div>Orders: {dcOrderLines.count.toLocaleString()} rows</div>
           <div>Routes: {routePlans.count.toLocaleString()} rows</div>
           <div>Onhand: {dcOnhand.count.toLocaleString()} rows</div>
+          {invoiceLines && <div>Invoices: {invoiceLines.count.toLocaleString()} rows</div>}
           <div>Updated: {formatRelativeTime(lastUpdated)}</div>
         </div>
       }

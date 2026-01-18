@@ -3,7 +3,7 @@
  * Loads DC Order Lines and Route Plans into DuckDB for querying
  */
 
-import type { DCOpenOrderLine, RoutePlanRaw } from '../../types';
+import type { DCOpenOrderLine, RoutePlanRaw, InvoiceLineRaw } from '../../types';
 import type { DCOnhandItem } from '../api';
 import { insertData, executeQuery, getConnection, tableExists } from './duckdbService';
 
@@ -12,6 +12,7 @@ export const TABLE_NAMES = {
   DC_ORDER_LINES: 'dc_order_lines',
   ROUTE_PLANS: 'route_plans',
   DC_ONHAND: 'dc_onhand',
+  INVOICE_LINES: 'invoice_lines',
 } as const;
 
 // Track data loading state
@@ -31,12 +32,18 @@ interface DataLoadState {
     count: number;
     lastLoaded: Date | null;
   };
+  invoiceLines: {
+    loaded: boolean;
+    count: number;
+    lastLoaded: Date | null;
+  };
 }
 
 let loadState: DataLoadState = {
   dcOrderLines: { loaded: false, count: 0, lastLoaded: null },
   routePlans: { loaded: false, count: 0, lastLoaded: null },
   dcOnhand: { loaded: false, count: 0, lastLoaded: null },
+  invoiceLines: { loaded: false, count: 0, lastLoaded: null },
 };
 
 /**
@@ -137,6 +144,33 @@ export async function loadDCOnhand(data: DCOnhandItem[]): Promise<void> {
 }
 
 /**
+ * Load Invoice Lines into DuckDB
+ */
+export async function loadInvoiceLines(data: InvoiceLineRaw[]): Promise<void> {
+  if (data.length === 0) {
+    console.warn('[DataLoader] No Invoice Lines to load');
+    return;
+  }
+
+  // Transform data to satisfy Record<string, unknown> type
+  const transformedData = data.map((line) => ({
+    ...line,
+    // Add numeric flag for line type
+    is_tax_line: line.line_type === 'TAX' ? 1 : 0,
+  }));
+
+  await insertData(TABLE_NAMES.INVOICE_LINES, transformedData, true);
+
+  loadState.invoiceLines = {
+    loaded: true,
+    count: data.length,
+    lastLoaded: new Date(),
+  };
+
+  console.log(`[DataLoader] Loaded ${data.length} Invoice Lines`);
+}
+
+/**
  * Load both datasets into DuckDB
  */
 export async function loadAllData(
@@ -157,10 +191,57 @@ export function getDataLoadState(): DataLoadState {
 }
 
 /**
+ * Check if a table exists and has data in DuckDB
+ * This is more reliable than checking in-memory state across page navigations
+ */
+export async function checkTableHasData(tableName: string): Promise<{ exists: boolean; count: number }> {
+  try {
+    if (!(await tableExists(tableName))) {
+      return { exists: false, count: 0 };
+    }
+    const result = await executeQuery<{ count: number }>(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const count = result[0]?.count ?? 0;
+    return { exists: count > 0, count };
+  } catch (e) {
+    console.warn(`[DataLoader] Could not check table ${tableName}:`, e);
+    return { exists: false, count: 0 };
+  }
+}
+
+/**
+ * Synchronize in-memory load state with actual DuckDB tables
+ * Call this on page mount to recover state after navigation
+ */
+export async function syncLoadStateFromDuckDB(): Promise<DataLoadState> {
+  const [orderLines, routePlans, dcOnhand, invoiceLines] = await Promise.all([
+    checkTableHasData(TABLE_NAMES.DC_ORDER_LINES),
+    checkTableHasData(TABLE_NAMES.ROUTE_PLANS),
+    checkTableHasData(TABLE_NAMES.DC_ONHAND),
+    checkTableHasData(TABLE_NAMES.INVOICE_LINES),
+  ]);
+
+  // Update in-memory state if tables have data
+  if (orderLines.exists && !loadState.dcOrderLines.loaded) {
+    loadState.dcOrderLines = { loaded: true, count: orderLines.count, lastLoaded: new Date() };
+  }
+  if (routePlans.exists && !loadState.routePlans.loaded) {
+    loadState.routePlans = { loaded: true, count: routePlans.count, lastLoaded: new Date() };
+  }
+  if (dcOnhand.exists && !loadState.dcOnhand.loaded) {
+    loadState.dcOnhand = { loaded: true, count: dcOnhand.count, lastLoaded: new Date() };
+  }
+  if (invoiceLines.exists && !loadState.invoiceLines.loaded) {
+    loadState.invoiceLines = { loaded: true, count: invoiceLines.count, lastLoaded: new Date() };
+  }
+
+  return { ...loadState };
+}
+
+/**
  * Check if data is loaded and ready for querying
  */
 export function isDataReady(): boolean {
-  return loadState.dcOrderLines.loaded || loadState.routePlans.loaded || loadState.dcOnhand.loaded;
+  return loadState.dcOrderLines.loaded || loadState.routePlans.loaded || loadState.dcOnhand.loaded || loadState.invoiceLines.loaded;
 }
 
 /**
@@ -170,6 +251,7 @@ export async function getDataSummary(): Promise<{
   dcOrderLines: { count: number; lastLoaded: Date | null };
   routePlans: { count: number; lastLoaded: Date | null };
   dcOnhand: { count: number; lastLoaded: Date | null };
+  invoiceLines: { count: number; lastLoaded: Date | null };
   tables: string[];
 }> {
   const tables = [];
@@ -183,6 +265,9 @@ export async function getDataSummary(): Promise<{
     }
     if (await tableExists(TABLE_NAMES.DC_ONHAND)) {
       tables.push(TABLE_NAMES.DC_ONHAND);
+    }
+    if (await tableExists(TABLE_NAMES.INVOICE_LINES)) {
+      tables.push(TABLE_NAMES.INVOICE_LINES);
     }
   } catch (e) {
     console.warn('[DataLoader] Could not check tables:', e);
@@ -200,6 +285,10 @@ export async function getDataSummary(): Promise<{
     dcOnhand: {
       count: loadState.dcOnhand.count,
       lastLoaded: loadState.dcOnhand.lastLoaded,
+    },
+    invoiceLines: {
+      count: loadState.invoiceLines.count,
+      lastLoaded: loadState.invoiceLines.lastLoaded,
     },
     tables,
   };
@@ -268,6 +357,26 @@ export async function createIndexes(): Promise<void> {
         ON ${TABLE_NAMES.DC_ONHAND}(locator)
       `);
       console.log('[DataLoader] Created indexes on dc_onhand');
+    }
+
+    if (await tableExists(TABLE_NAMES.INVOICE_LINES)) {
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_invoice_trx_id
+        ON ${TABLE_NAMES.INVOICE_LINES}(customer_trx_id)
+      `);
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_invoice_trx_number
+        ON ${TABLE_NAMES.INVOICE_LINES}(trx_number)
+      `);
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_invoice_transtype
+        ON ${TABLE_NAMES.INVOICE_LINES}(invtranstype)
+      `);
+      await conn.query(`
+        CREATE INDEX IF NOT EXISTS idx_invoice_billcust
+        ON ${TABLE_NAMES.INVOICE_LINES}(billcustname)
+      `);
+      console.log('[DataLoader] Created indexes on invoice_lines');
     }
   } catch (error) {
     console.warn('[DataLoader] Index creation failed (may already exist):', error);
@@ -353,5 +462,32 @@ Contains DC onhand inventory data:
 - product_group: Product group code (Combination of code and value ex. 01-DCV)
 - productgrp_display: Product group description
 - style: Product style
+
+### invoice_lines
+Contains invoice line data from receivables:
+- customer_trx_id: Invoice transaction identifier
+- trx_number: Invoice number
+- trx_date: Invoice date
+- invtranstype: Transaction type (Invoice, Credit Memo, Debit Memo, etc.)
+- batchsource: Batch source
+- ordertype: Order type
+- shipmethod: Shipping method
+- billcustname: Bill-to customer name
+- shipcustname: Ship-to customer name
+- shiploc: Ship-to location
+- line_number: Line number within the invoice
+- line_type: LINE or TAX
+- is_tax_line: 1 if TAX line, 0 if LINE
+- item_number: Item number/SKU
+- productgrp: Product group
+- vendor: Vendor name
+- style: Product style
+- quantity_invoiced: Quantity invoiced
+- unit_selling_price: Unit selling price
+- extended_amount: Extended amount (qty * price)
+- sales_order: Related sales order number
+- sales_order_line: Related sales order line
+- tax_name: Tax name (for TAX lines)
+- tax_rate: Tax rate (for TAX lines)
 `;
 }

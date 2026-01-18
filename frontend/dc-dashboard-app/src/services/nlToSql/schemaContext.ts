@@ -111,6 +111,46 @@ const COLUMN_DESCRIPTIONS: Record<string, Record<string, string>> = {
     productgrp: 'Product group description',
     style: 'Product style identifier',
   },
+  invoice_lines: {
+    // Invoice header information
+    customer_trx_id: 'Invoice transaction identifier (unique per invoice)',
+    trx_number: 'Invoice number (display value)',
+    trx_date: 'VARCHAR ISO date - Invoice date. Use CAST(trx_date AS DATE) for date filtering',
+    invtranstype: 'Transaction type (Invoice, Credit Memo, Debit Memo, etc.)',
+    batchsource: 'Batch source identifier',
+    ordertype: 'Order type',
+    shipmethod: 'Shipping method',
+
+    // Customer information
+    billcustname: 'Bill-to customer name',
+    shipcustname: 'Ship-to customer name',
+    shiploc: 'Ship-to location code',
+
+    // Line details
+    line_number: 'Line number within the invoice',
+    line_type: "Line type: 'LINE' for product lines, 'TAX' for tax lines",
+    is_tax_line: '1 if TAX line, 0 if LINE (use for filtering/counting)',
+    customer_trx_line_id: 'Unique line identifier',
+
+    // Item information (for LINE type)
+    item_number: 'Item number/SKU',
+    productgrp: 'Product group',
+    vendor: 'Vendor name',
+    style: 'Product style',
+
+    // Quantities and amounts
+    quantity_invoiced: 'Quantity invoiced',
+    unit_selling_price: 'Unit selling price',
+    extended_amount: 'Extended amount (quantity * unit price)',
+
+    // Related order information
+    sales_order: 'Related sales order number',
+    sales_order_line: 'Related sales order line number',
+
+    // Tax information (for TAX type lines)
+    tax_name: 'Tax name (for TAX lines)',
+    tax_rate: 'Tax rate percentage (for TAX lines)',
+  },
 };
 
 /**

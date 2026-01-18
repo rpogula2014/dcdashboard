@@ -8,8 +8,8 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   TruckOutlined,
-  BarChartOutlined,
-  ClockCircleOutlined,
+  InboxOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import type { ExampleQuestion } from '../../types';
 import './TalkToData.css';
@@ -35,11 +35,6 @@ const EXAMPLE_QUESTIONS: ExampleQuestion[] = [
     description: "Today's shipments",
   },
   {
-    text: 'Show me orders over 10 units',
-    category: 'orders',
-    description: 'Large quantity orders',
-  },
-  {
     text: 'What are the top 10 customers by order count?',
     category: 'orders',
     description: 'Customer analysis',
@@ -62,33 +57,38 @@ const EXAMPLE_QUESTIONS: ExampleQuestion[] = [
     description: 'Driver assignments',
   },
 
-  // Analysis category
+  // Onhand category
   {
-    text: 'What percentage of orders are routed?',
-    category: 'analysis',
-    description: 'Routing efficiency',
+    text: 'What is the total quantity by subinventory?',
+    category: 'onhand',
+    description: 'Inventory by location',
   },
   {
-    text: 'Compare orders by shipping method',
-    category: 'analysis',
-    description: 'Shipping breakdown',
+    text: 'Show inventory grouped by vendor',
+    category: 'onhand',
+    description: 'Vendor inventory',
   },
   {
-    text: 'Show order distribution by status',
-    category: 'analysis',
-    description: 'Status overview',
+    text: 'What items are in QUICKPICK subinventory?',
+    category: 'onhand',
+    description: 'Quickpick items',
   },
 
-  // Status category
+  // Invoices category
   {
-    text: 'Which orders are backordered?',
-    category: 'status',
-    description: 'Backorder check',
+    text: 'How many invoices by transaction type?',
+    category: 'invoices',
+    description: 'Invoice breakdown',
   },
   {
-    text: 'Show orders with released holds',
-    category: 'status',
-    description: 'Released holds',
+    text: 'Who are our top 10 customers by invoice amount?',
+    category: 'invoices',
+    description: 'Top customers',
+  },
+  {
+    text: 'Show credit memos from this week',
+    category: 'invoices',
+    description: 'Credit memo review',
   },
 ];
 
@@ -99,8 +99,8 @@ const CATEGORY_CONFIG: Record<
 > = {
   orders: { icon: <ShoppingCartOutlined />, color: 'blue', label: 'Orders' },
   routes: { icon: <TruckOutlined />, color: 'green', label: 'Routes' },
-  analysis: { icon: <BarChartOutlined />, color: 'purple', label: 'Analysis' },
-  status: { icon: <ClockCircleOutlined />, color: 'orange', label: 'Status' },
+  onhand: { icon: <InboxOutlined />, color: 'purple', label: 'Onhand' },
+  invoices: { icon: <FileTextOutlined />, color: 'orange', label: 'Invoices' },
 };
 
 /**

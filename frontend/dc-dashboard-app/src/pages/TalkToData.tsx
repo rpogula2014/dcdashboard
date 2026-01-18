@@ -15,9 +15,9 @@ import {
 import { useOrderContext } from '../contexts';
 import { processNaturalLanguageQuery } from '../services/nlToSql/nlToSqlService';
 import { logMetrics, calculateCost } from '../services/feedbackService';
-import { loadDCOrderLines, loadRoutePlans, loadDCOnhand, getDataLoadState, isDataReady } from '../services/duckdb/dataLoaders';
-import { initializeDuckDB } from '../services/duckdb/duckdbService';
-import { fetchRoutePlans, fetchDCOnhand } from '../services/api';
+import { loadDCOrderLines, loadRoutePlans, loadDCOnhand, loadInvoiceLines, getDataLoadState, isDataReady, syncLoadStateFromDuckDB } from '../services/duckdb/dataLoaders';
+import { initializeDuckDB, isInitialized } from '../services/duckdb/duckdbService';
+import { fetchRoutePlans, fetchDCOnhand, fetchInvoiceLines } from '../services/api';
 import { useDCContext } from '../contexts';
 import type { ChatMessage, DataFreshness as DataFreshnessType, RoutePlanRaw, FeedbackRating, AiResponseData } from '../types';
 import '../components/TalkToData/TalkToData.css';
@@ -50,6 +50,7 @@ export function TalkToData() {
     dcOrderLines: { loaded: false, count: 0, lastLoaded: null },
     routePlans: { loaded: false, count: 0, lastLoaded: null },
     dcOnhand: { loaded: false, count: 0, lastLoaded: null },
+    invoiceLines: { loaded: false, count: 0, lastLoaded: null },
   });
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -77,60 +78,114 @@ export function TalkToData() {
         setIsInitializing(true);
         setInitError(null);
 
-        // Initialize DuckDB
-        await initializeDuckDB();
+        // Initialize DuckDB (if not already)
+        if (!isInitialized()) {
+          await initializeDuckDB();
+        }
 
-        // Check current load state to avoid reloading
-        const currentState = getDataLoadState();
+        // Sync in-memory state with actual DuckDB tables (recovers state after page navigation)
+        const syncedState = await syncLoadStateFromDuckDB();
+        console.log('[TalkToData] Synced state from DuckDB:', syncedState);
 
-        // Load order data if available and not already loaded
-        if (orders && orders.length > 0 && !currentState.dcOrderLines.loaded) {
+        // Update freshness immediately with synced state
+        setDataFreshness({
+          dcOrderLines: syncedState.dcOrderLines,
+          routePlans: syncedState.routePlans,
+          dcOnhand: syncedState.dcOnhand,
+          invoiceLines: syncedState.invoiceLines,
+        });
+
+        // Load order data if available and not already loaded (this is fast, keep sync)
+        if (orders && orders.length > 0 && !syncedState.dcOrderLines.loaded) {
           await loadDCOrderLines(orders);
           console.log(`[TalkToData] Loaded ${orders.length} orders into DuckDB`);
-        } else if (currentState.dcOrderLines.loaded) {
+        } else if (syncedState.dcOrderLines.loaded) {
           console.log('[TalkToData] dc_order_lines already loaded, skipping');
         }
 
-        // Fetch and load route plans (only if not already loaded)
-        if (!currentState.routePlans.loaded) {
-          try {
-            console.log('[TalkToData] Fetching route plans...');
-            const routes = await fetchRoutePlans();
-            setRoutePlans(routes);
-            if (routes.length > 0) {
-              await loadRoutePlans(routes);
-            }
-            console.log(`[TalkToData] Loaded ${routes.length} route plans`);
-          } catch (routeError) {
-            console.warn('[TalkToData] Failed to load route plans:', routeError);
-          }
+        // Helper to update freshness state
+        const updateFreshness = () => {
+          const loadState = getDataLoadState();
+          setDataFreshness({
+            dcOrderLines: loadState.dcOrderLines,
+            routePlans: loadState.routePlans,
+            dcOnhand: loadState.dcOnhand,
+            invoiceLines: loadState.invoiceLines,
+          });
+        };
+
+        // Fetch and load remaining data in parallel (non-blocking)
+        const loadPromises: Promise<void>[] = [];
+
+        // Route plans (only if not already loaded)
+        if (!syncedState.routePlans.loaded) {
+          loadPromises.push(
+            (async () => {
+              try {
+                console.log('[TalkToData] Fetching route plans...');
+                const routes = await fetchRoutePlans();
+                setRoutePlans(routes);
+                if (routes.length > 0) {
+                  await loadRoutePlans(routes);
+                }
+                console.log(`[TalkToData] Loaded ${routes.length} route plans`);
+                updateFreshness();
+              } catch (routeError) {
+                console.warn('[TalkToData] Failed to load route plans:', routeError);
+              }
+            })()
+          );
         } else {
           console.log('[TalkToData] route_plans already loaded, skipping');
         }
 
-        // Fetch and load DC onhand inventory (only if not already loaded)
-        if (!currentState.dcOnhand.loaded) {
-          try {
-            console.log('[TalkToData] Fetching DC onhand inventory...');
-            const onhandData = await fetchDCOnhand(selectedDC);
-            if (onhandData.length > 0) {
-              await loadDCOnhand(onhandData);
-            }
-            console.log(`[TalkToData] Loaded ${onhandData.length} onhand items`);
-          } catch (onhandError) {
-            console.warn('[TalkToData] Failed to load onhand inventory:', onhandError);
-          }
+        // DC onhand inventory (only if not already loaded)
+        if (!syncedState.dcOnhand.loaded) {
+          loadPromises.push(
+            (async () => {
+              try {
+                console.log('[TalkToData] Fetching DC onhand inventory...');
+                const onhandData = await fetchDCOnhand(selectedDC);
+                if (onhandData.length > 0) {
+                  await loadDCOnhand(onhandData);
+                }
+                console.log(`[TalkToData] Loaded ${onhandData.length} onhand items`);
+                updateFreshness();
+              } catch (onhandError) {
+                console.warn('[TalkToData] Failed to load onhand inventory:', onhandError);
+              }
+            })()
+          );
         } else {
           console.log('[TalkToData] dc_onhand already loaded, skipping');
         }
 
-        // Update freshness state
-        const loadState = getDataLoadState();
-        setDataFreshness({
-          dcOrderLines: loadState.dcOrderLines,
-          routePlans: loadState.routePlans,
-          dcOnhand: loadState.dcOnhand,
-        });
+        // Invoice lines (only if not already loaded)
+        if (!syncedState.invoiceLines.loaded) {
+          loadPromises.push(
+            (async () => {
+              try {
+                console.log('[TalkToData] Fetching invoice lines...');
+                const invoiceData = await fetchInvoiceLines(selectedDC);
+                if (invoiceData.length > 0) {
+                  await loadInvoiceLines(invoiceData);
+                }
+                console.log(`[TalkToData] Loaded ${invoiceData.length} invoice lines`);
+                updateFreshness();
+              } catch (invoiceError) {
+                console.warn('[TalkToData] Failed to load invoice lines:', invoiceError);
+              }
+            })()
+          );
+        } else {
+          console.log('[TalkToData] invoice_lines already loaded, skipping');
+        }
+
+        // Wait for all data to load in parallel
+        await Promise.all(loadPromises);
+
+        // Final update of freshness state
+        updateFreshness();
 
         setIsInitializing(false);
       } catch (error) {
@@ -283,6 +338,7 @@ export function TalkToData() {
       dcOrderLines: loadState.dcOrderLines,
       routePlans: loadState.routePlans,
       dcOnhand: loadState.dcOnhand,
+      invoiceLines: loadState.invoiceLines,
     });
   }, [orders, selectedDC]);
 
@@ -365,6 +421,7 @@ export function TalkToData() {
           dcOrderLines: loadState.dcOrderLines,
           routePlans: loadState.routePlans,
           dcOnhand: loadState.dcOnhand,
+          invoiceLines: loadState.invoiceLines,
         });
       } catch (error) {
         console.error('[TalkToData] Auto-refresh failed:', error);

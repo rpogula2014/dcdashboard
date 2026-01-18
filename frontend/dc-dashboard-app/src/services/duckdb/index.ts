@@ -25,6 +25,8 @@ export {
   TABLE_NAMES,
   loadDCOrderLines,
   loadRoutePlans,
+  loadDCOnhand,
+  loadInvoiceLines,
   loadAllData,
   getDataLoadState,
   isDataReady,
@@ -33,4 +35,6 @@ export {
   createIndexes,
   getTableSchemas,
   generateSchemaDescription,
+  checkTableHasData,
+  syncLoadStateFromDuckDB,
 } from './dataLoaders';

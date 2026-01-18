@@ -16,6 +16,8 @@ import {
   SyncOutlined,
   AlertOutlined,
   SettingOutlined,
+  FileTextOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import type { PageKey } from '../../types';
 import { useOrderContext, useDCContext } from '../../contexts';
@@ -113,6 +115,38 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       children: [
         createMenuItem('onhand', 'Onhand', <DatabaseOutlined />, undefined, undefined, collapsed),
         createMenuItem('cycleCount', 'Cycle Counts', <SyncOutlined />, undefined, undefined, collapsed),
+      ],
+    },
+
+    // Divider
+    { type: 'divider' },
+
+    // Receivables Section
+    {
+      type: 'group',
+      label: !collapsed ? 'Receivables' : null,
+      children: [
+        createMenuItem('invoices', 'Invoices', <FileTextOutlined />, undefined, undefined, collapsed),
+        {
+          key: 'payments',
+          icon: <WalletOutlined />,
+          label: (
+            <span className="sidebar-menu-label">
+              <span className="sidebar-menu-text" style={{ opacity: 0.5 }}>Payments</span>
+              <Badge
+                count="Soon"
+                size="small"
+                style={{
+                  backgroundColor: '#8c8c8c',
+                  marginLeft: collapsed ? 0 : 8,
+                  fontSize: '10px',
+                }}
+                className="sidebar-badge"
+              />
+            </span>
+          ),
+          disabled: true,
+        },
       ],
     },
 
